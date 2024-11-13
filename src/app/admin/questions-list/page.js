@@ -2,5 +2,5 @@
 
 /**TODO: investigate the possibility of making this page SSR **/
 const QuestionsList = () => {
-  return <div> No Questions Saved Yest</div>
+  return <div> No Questions Saved Yet</div>
 }

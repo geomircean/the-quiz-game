@@ -1,7 +1,7 @@
 'use client';
 
 import Question from '@/components/question';
-import { useQuestionsStore } from '@/stores/questions-store';
+import { useQuestionsStore } from '@/stores/active-quiz-store';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 

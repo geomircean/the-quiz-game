@@ -3,7 +3,7 @@
 
 import { useRouter } from 'next/navigation';
 import Card from '@/components/card';
-import { useQuestionsStore } from '@/stores/questions-store';
+import { useQuestionsStore } from '@/stores/active-quiz-store';
 import { Button } from '@/components';
 import { Cog8ToothIcon } from '@heroicons/react/20/solid';
 
@@ -11,15 +11,21 @@ import { Cog8ToothIcon } from '@heroicons/react/20/solid';
 const Home = () => {
   const router = useRouter();
   const { scoreTeamA, scoreTeamB } = useQuestionsStore();
-  const { questions, setActiveQuestion } = useQuestionsStore();
+  const {
+    questions,
+    visitedQuestions,
+    setActiveQuestion,
+    setVisitedQuestions
+  } = useQuestionsStore();
   const goToAdmin = () => router.push('/admin');
   const goToQuestion = index => {
     setActiveQuestion(index);
+    setVisitedQuestions(index)
     router.push(`/question/${index}`);
   };
 
   return (
-    <main className="flex min-h-screen flex-col p-4 gap-1">
+    <main className="flex flex-col p-4 gap-1">
       <div className="w-full flex justify-end">
         <Button className='border-0' onClick={goToAdmin}>
           <Cog8ToothIcon className="size-6 text-white"/>
@@ -28,7 +34,12 @@ const Home = () => {
       <div className='flex flex-row flex-wrap items-center justify-between px-12 py-4 gap-1'>
         <div className="flex flex-row flex-wrap gap-x-8 gap-y-8 items-center justify-between">
           {questions.map(({ questionName }, index) => (
-            <Card key={`question-${index}`} title={questionName} onClick={() => goToQuestion(index)}/>
+            <Card
+              key={`question-${index}`}
+              title={questionName}
+              isActive={!visitedQuestions.includes(index)}
+              onClick={() => goToQuestion(index)}
+            />
           ))}
         </div>
         <div className="flex flex-row justify-evenly size-full">
