@@ -80,7 +80,7 @@ const QuestionConfiguration = ({ questionIndex, validation }) => {
                 </div>
               </div>
             ))}
-          {validation?.hasNoCorectAnswers && <div className='error-message'>Please mark one of the above questions as being the correct one.</div>}
+          {validation?.hasNoCorectAnswers && <div className='error-message'>Please select the correct answer.</div>}
 
           {currentQuestion.answers.length < 4 &&
             <Button className='border-2 border-foreground hover:bg-cyan-900 p-3 mt-4' onClick={() => addAnswer({ questionIndex })}>Add Answer</Button>}

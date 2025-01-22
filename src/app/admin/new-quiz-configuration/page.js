@@ -11,7 +11,6 @@ const NewQuizConfiguration = ({}) => {
   const { isAllValid, fullQuizValidation,  } = validations;
   const goToAdmin = () => router.push('/admin');
   const changeName = ev => setQuizName({ quizName: ev.currentTarget.value });
-  console.log(fullQuizValidation)
 
   return (
     <div className='flex flex-col justify-center gap-4'>
@@ -26,7 +25,7 @@ const NewQuizConfiguration = ({}) => {
         <input name='quizName' type='text' value={quizName} className='text-black p-1' onChange={changeName}/>
       </label>
       <p className='text-m italic'>
-        Start creating your quiz by adding your questions and answers. Don't forget to mark
+        Start creating your quiz by adding your questions and answers. Don&#39;t forget to mark
         which question is correct.
       </p>
 

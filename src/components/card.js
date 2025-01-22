@@ -1,6 +1,8 @@
+import { noop } from '@/utils';
+
 const Card = ({ title, children, className, isActive, onClick }) => {
   return (
-    <a onClick={isActive && onClick} className={`group relative block h-60 basis-1/5 cursor-pointer ${className}`}>
+    <a onClick={isActive ? onClick : noop} className={`group relative block h-60 basis-1/5 cursor-pointer ${className}`}>
       <span className="absolute inset-0 border-2 border-dashed border-white"></span>
 
       <div

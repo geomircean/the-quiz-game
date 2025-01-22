@@ -3,7 +3,7 @@
 import Question from '@/components/question';
 import { useQuestionsStore } from '@/stores/active-quiz-store';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { use, useState } from 'react';
 
 export default function QuestionPage({ params }) {
   const router = useRouter();
@@ -16,7 +16,9 @@ export default function QuestionPage({ params }) {
     setSelectedAnswer,
     setScore
   } = useQuestionsStore();
-  const { possibleAnswers = [] } = questions[activeQuestionIndex || params.id] || {};
+  const { id: questionId } = use(params);
+
+  const { possibleAnswers = [] } = questions[activeQuestionIndex || questionId] || {};
   const handleExit = () => {
     setActiveQuestion(null);
     setSelectedAnswer(null);
