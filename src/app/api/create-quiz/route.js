@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server'
 
 /** Just pushing new questions to DB for now */
 export async function POST(req){
-  if (req.method === "GET") {
+  if (req.method === "POST") {
     const client = new MongoClient(process.env.MONGODB_URI);
 
     try {

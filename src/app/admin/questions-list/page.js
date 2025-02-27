@@ -1,6 +1,9 @@
 'use client';
 
 /**TODO: investigate the possibility of making this page SSR **/
-export const QuestionsList = () => {
+const QuestionsList = () => {
   return <div> No Questions Saved Yet</div>
 }
+
+
+export default QuestionsList;

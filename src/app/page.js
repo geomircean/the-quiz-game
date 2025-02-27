@@ -8,7 +8,7 @@ import { Button } from '@/components';
 import { Cog8ToothIcon } from '@heroicons/react/20/solid';
 import LandingPageQuestions from '@/components/landing-page-questions';
 
-import useGetAllQuestions from '@/hooks/useGetAllQuestions';
+// import useGetAllQuestions from '@/hooks/useGetAllQuestions';
 
 const Home = () => {
   const router = useRouter();
@@ -30,7 +30,7 @@ const Home = () => {
     if (!questions) {
       getQuestions();
     }
-  }, []);
+  }, [questions, getQuestions]);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-purple-950 to-indigo-950">
