@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@use "tailwindcss";
 
 :root {
   --foreground-rgb: 0, 0, 0;
@@ -41,12 +39,6 @@ body {
 
 button {
   border: 2px solid var(--foreground);
-}
-
-.page-header {
-  position: sticky;
-  top: 0;
-  background: var(--dark-background);
 }
 
 .error-message{
