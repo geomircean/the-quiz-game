@@ -14,8 +14,8 @@ const NewQuizConfiguration = ({}) => {
 
   return (
     <div className='flex flex-col justify-center gap-4'>
-      <div className='flex justify-between page-header px-24 py-5'>
-        <Button onClick={goToAdmin}><ArrowUturnLeftIcon className='size-6 text-foreground'/> </Button>
+      <div className='flex justify-between px-24 py-5'>
+        <Button onClick={goToAdmin}><ArrowUturnLeftIcon className='size-6'/> </Button>
         <Button onClick={saveQuiz}>Save</Button>
       </div>
       <div className='mx-auto'>

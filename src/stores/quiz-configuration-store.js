@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { produce } from 'immer';
+import { validateNewQuiz } from '@/app/validations';
 
 const answerStruct = { answerLabel: '', isCorrect: false };
 const questionStruct = {
@@ -53,31 +54,8 @@ export const useQuizConfigStore = create((set) => ({
     return { fullQuiz };
   }),
   saveQuiz: () => set(state => {
-    const { quizName, fullQuiz } = state;
-    const isQuizNameValid = !quizName;
-    let isAllValid = !quizName;
+    const validations = validateNewQuiz(state);
+    if (!validations.isAllValid) return { validations };
 
-    const fullQuizValidation = [];
-
-    fullQuiz.forEach((question, questionIndex) => {
-      fullQuizValidation.push({ answers: [] });
-      const hasNoCorrectAnswers = !question.answers.find(({ isCorrect }) => isCorrect);
-      fullQuizValidation[questionIndex].hasNoCorectAnswers = hasNoCorrectAnswers;
-      // fullQuizValidation[questionIndex].description = !!question.description;
-      if (hasNoCorrectAnswers || !!question.description) {
-        isAllValid = false;
-      }
-      question.answers.forEach(({ answerLabel }, answerIndex) => {
-        fullQuizValidation[questionIndex].answers[answerIndex] = !answerLabel;
-        if (!answerLabel) isAllValid = false;
-      });
-    });
-    return {
-      validations: {
-        isAllValid,
-        isQuizNameValid,
-        fullQuizValidation,
-      }
-    };
   }),
 }));
