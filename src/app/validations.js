@@ -5,15 +5,15 @@ export const validateNewQuiz = ({ quizName, fullQuiz }) => {
   const fullQuizValidation = [];
 
   fullQuiz.forEach((question, questionIndex) => {
-    fullQuizValidation.push({ answers: [] });
-    const hasNoCorrectAnswers = !question.answers.find(({ isCorrect }) => isCorrect);
+    fullQuizValidation.push({ possibleAnswers: [] });
+    const hasNoCorrectAnswers = !question.possibleAnswers.find(({ isCorrect }) => isCorrect);
     fullQuizValidation[questionIndex].hasNoCorectAnswers = hasNoCorrectAnswers;
     // fullQuizValidation[questionIndex].description = !!question.description;
     if (hasNoCorrectAnswers || !!question.description) {
       isAllValid = false;
     }
-    question.answers.forEach(({ answerLabel }, answerIndex) => {
-      fullQuizValidation[questionIndex].answers[answerIndex] = !answerLabel;
+    question.possibleAnswers.forEach(({ answerLabel }, answerIndex) => {
+      fullQuizValidation[questionIndex].possibleAnswers[answerIndex] = !answerLabel;
       if (!answerLabel) isAllValid = false;
     });
   });
