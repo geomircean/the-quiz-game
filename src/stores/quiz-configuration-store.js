@@ -2,10 +2,11 @@ import { create } from 'zustand';
 import { produce } from 'immer';
 import { validateNewQuiz } from '@/app/validations';
 
-const answerStruct = { answerLabel: '', isCorrect: false };
+const answerStruct = { answerMessage: '', isCorrect: false };
 const questionStruct = {
   description: '',
-  answers: [],
+  category: '',
+  possibleAnswers: [],
 };
 
 export const useQuizConfigStore = create((set) => ({
@@ -21,30 +22,33 @@ export const useQuizConfigStore = create((set) => ({
   addQuestion: () =>
     set(state => {
       const { fullQuiz } = state;
-      fullQuiz.push({ ...questionStruct, answers: [{ ...answerStruct }] });
+      fullQuiz.push({ ...questionStruct, possibleAnswers: [{ ...answerStruct }] });
       return { fullQuiz };
     }),
+  setupSingleQuestion: () => set(state => {
+    return { fullQuiz: [{ ...questionStruct, possibleAnswers: [{ ...answerStruct }] }] };
+  }),
   addAnswer: ({ questionIndex }) => set(state => {
     const { fullQuiz } = state;
-    const { answers } = fullQuiz[questionIndex];
-    fullQuiz[questionIndex].answers = [...answers, { ...answerStruct }];
+    const { possibleAnswers } = fullQuiz[questionIndex];
+    fullQuiz[questionIndex].possibleAnswers = [...possibleAnswers, { ...answerStruct }];
     return { fullQuiz };
   }),
   deleteAnswer: ({ questionIndex, answerIndex }) => set(state => {
     const { fullQuiz } = state;
-    const { answers } = fullQuiz[questionIndex];
-    answers.splice(answerIndex, 1);
-    fullQuiz[questionIndex].answers = answers;
+    const { possibleAnswers } = fullQuiz[questionIndex];
+    possibleAnswers.splice(answerIndex, 1);
+    fullQuiz[questionIndex].possibleAnswers = possibleAnswers;
     return { fullQuiz };
   }),
   updateAnswer: ({ questionIndex, answerIndex, value }) => set(state => {
     const { fullQuiz } = state;
-    fullQuiz[questionIndex].answers[answerIndex].answerLabel = value;
+    fullQuiz[questionIndex].possibleAnswers[answerIndex].answerMessage = value;
     return { fullQuiz };
   }),
   updateIsCorrect: ({ questionIndex, answerIndex, value }) => set(state => {
     const { fullQuiz } = state;
-    fullQuiz[questionIndex].answers[answerIndex].isCorrect = value;
+    fullQuiz[questionIndex].possibleAnswers[answerIndex].isCorrect = value;
     return { fullQuiz };
   }),
   changeQuestionDescription: ({ questionIndex, value }) => set(state => {
@@ -53,7 +57,25 @@ export const useQuizConfigStore = create((set) => ({
 
     return { fullQuiz };
   }),
+  changeQuestionCategory: ({ questionIndex, value }) => set(state => {
+    const { fullQuiz } = state;
+    fullQuiz[questionIndex].category = value;
+
+    return { fullQuiz };
+  }),
   saveQuiz: () => set(state => {
+    const validations = validateNewQuiz(state);
+    if (!validations.isAllValid) return { validations };
+  }),
+  resetQuiz: () => set(state => ({
+    fullQuiz: [],
+    validations: {
+      isAllValid: true,
+      isQuizNameValid: true,
+      fullQuizValidation: {},
+    }
+  })),
+  saveQuestion: () => set(state => {
     const validations = validateNewQuiz(state);
     if (!validations.isAllValid) return { validations };
 
