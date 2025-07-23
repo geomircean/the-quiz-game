@@ -12,7 +12,7 @@ const LandingPageQuestions = ({ goToQuestion }) => {
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {questions.map(({ category, id, }, index) => (
-        <div key={id} onClick={() => goToQuestion(index)}>
+        <div key={`cards-${index}`} onClick={() => goToQuestion(index)}>
           <motion.div
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
