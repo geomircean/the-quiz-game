@@ -13,9 +13,7 @@ export const getAllQuestions = async () => {
 
 export const addQuestion = async (question) => {
   try {
-    console.log('im at the service spot')
-    const res = await fetch('/api/save-question', { method: 'POST', body: JSON.stringify(question) });
-    console.log('post fetch');
+    const res = await fetch(apiRoutes.saveQuestion, { method: 'POST', body: JSON.stringify(question) });
     if (!res.ok) throw new Error('Failed to add question');
     return await res.json();
   } catch (error) {
@@ -25,7 +23,7 @@ export const addQuestion = async (question) => {
 
 export const editQuestion = async (question) => {
   try {
-    const res = await fetch('/api/save-question', { method: 'PUT', body: JSON.stringify(question) });
+    const res = await fetch(apiRoutes.saveQuestion, { method: 'PUT', body: JSON.stringify(question) });
     if (!res.ok) throw new Error('Failed to update question');
     return await res.json();
   } catch (error) {

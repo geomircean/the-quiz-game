@@ -1,27 +1,42 @@
+const hasContent = text => typeof text === 'string' && text && text.length > 0 && text.trim().length > 0;
+
 export const validateNewQuiz = ({ quizName, fullQuiz }) => {
-  const isQuizNameValid = !quizName;
+  // const isQuizNameValid = !quizName;
   let isAllValid = !quizName;
 
   const fullQuizValidation = [];
 
   fullQuiz.forEach((question, questionIndex) => {
     fullQuizValidation.push({ possibleAnswers: [] });
-    const hasNoCorrectAnswers = !question.possibleAnswers.find(({ isCorrect }) => isCorrect);
-    fullQuizValidation[questionIndex].hasNoCorectAnswers = hasNoCorrectAnswers;
-    // fullQuizValidation[questionIndex].description = !!question.description;
-    if (hasNoCorrectAnswers || !!question.description) {
-      isAllValid = false;
-    }
-    question.possibleAnswers.forEach(({ answerLabel }, answerIndex) => {
-      fullQuizValidation[questionIndex].possibleAnswers[answerIndex] = !answerLabel;
-      if (!answerLabel) isAllValid = false;
-    });
+    const { isValid, ...rest } = validateQuestion(question);
+    fullQuizValidation[questionIndex] = { ...rest };
+    if (!isValid) { isAllValid = false; }
   });
+
   return {
     validations: {
       isAllValid,
-      isQuizNameValid,
+      // isQuizNameValid,
       fullQuizValidation,
     }
   };
+}
+
+export const validateQuestion = (question) => {
+  const description = !hasContent(question.description);
+  const category = !hasContent(question.category);
+  const hasNoCorrectAnswers = !question.possibleAnswers.find(({ isCorrect }) => isCorrect);
+  let isValid = true;
+
+  if (hasNoCorrectAnswers || description || category) {
+    isValid = false;
+  }
+  const possibleAnswers = [];
+
+  question.possibleAnswers.forEach(({ answerMessage }, answerIndex) => {
+    possibleAnswers[answerIndex] = !answerMessage;
+    if (!answerMessage) isValid = false;
+  });
+
+  return { hasNoCorrectAnswers, possibleAnswers, description, category, isValid, };
 }

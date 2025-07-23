@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { produce } from 'immer';
 import { validateNewQuiz } from '@/app/validations';
+import { saveQuiz } from '@/services/manage-quiz-api';
+
 
 const answerStruct = { answerMessage: '', isCorrect: false };
 const questionStruct = {
@@ -9,7 +11,7 @@ const questionStruct = {
   possibleAnswers: [],
 };
 
-export const useQuizConfigStore = create((set) => ({
+export const useQuizConfigStore = create((set, get) => ({
   quizId: '',
   quizName: '',
   fullQuiz: [],
@@ -48,13 +50,14 @@ export const useQuizConfigStore = create((set) => ({
   }),
   updateIsCorrect: ({ questionIndex, answerIndex, value }) => set(state => {
     const { fullQuiz } = state;
-    fullQuiz[questionIndex].possibleAnswers[answerIndex].isCorrect = value;
+    fullQuiz[questionIndex].possibleAnswers = fullQuiz[questionIndex]
+      .possibleAnswers.map((answer, answerInd) => ({ ...answer, isCorrect: answerInd === answerIndex }));
+
     return { fullQuiz };
   }),
   changeQuestionDescription: ({ questionIndex, value }) => set(state => {
     const { fullQuiz } = state;
     fullQuiz[questionIndex].description = value;
-
     return { fullQuiz };
   }),
   changeQuestionCategory: ({ questionIndex, value }) => set(state => {
@@ -63,10 +66,24 @@ export const useQuizConfigStore = create((set) => ({
 
     return { fullQuiz };
   }),
-  saveQuiz: () => set(state => {
-    const validations = validateNewQuiz(state);
-    if (!validations.isAllValid) return { validations };
-  }),
+  saveQuiz: async () => {
+    const fullQuiz = get().fullQuiz;
+    const { validations } = validateNewQuiz({ fullQuiz });
+    const { isAllValid } = validations;
+    console.log(fullQuiz);
+
+    if (!isAllValid) {
+      console.log('not valid', validations);
+      return set({ validations });
+    }
+
+    try {
+      const res = await saveQuiz(fullQuiz);
+      return set({ isAllValid, res, validations, fullQuiz: [] });
+    } catch (error) {
+      return set({ isAllValid: false, error: error.message, });
+    }
+  },
   resetQuiz: () => set(state => ({
     fullQuiz: [],
     validations: {
@@ -76,8 +93,7 @@ export const useQuizConfigStore = create((set) => ({
     }
   })),
   saveQuestion: () => set(state => {
-    const validations = validateNewQuiz(state);
-    if (!validations.isAllValid) return { validations };
-
+    const fullQuizValidation = validateNewQuiz(state);
+    return { validations: { ...state.validations, fullQuizValidation, } };
   }),
 }));
