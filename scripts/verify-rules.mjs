@@ -2,9 +2,9 @@
  * Emulator-based verification of the Firestore security rules.
  * Run with the emulator suite up:  node scripts/verify-rules.mjs
  *
- * Proves the P1 contract: a Quizmaster owns a private library; another
- * Quizmaster and an anonymous guest can neither read nor write it, and the
- * catch-all denies everything else.
+ * Proves the P1 (question library) and P2 (quizzes) rules contracts:
+ * owner-only reads/writes, shape validation, createdAt immutability, the
+ * delete-guard query, and catch-all denial for everyone else.
  */
 import { initializeApp } from 'firebase/app';
 import {
@@ -134,9 +134,82 @@ await check('anon cannot sweep questions via collection-group query', 'deny', ()
   getDocs(collectionGroup(db, 'questions')));
 await signOut(auth);
 
+// --- Quizzes: owner-only pointers into the library --------------------------
+await signInGoogle('alice-sub', 'alice@example.com');
+const quizPayload = {
+  name: 'Friday Night Quiz',
+  answerMode: 'firstTap',
+  questionIds: [aliceDocRef.id],
+  teams: { A: { name: 'Team 1' }, B: { name: 'Team 2' } },
+  createdAt: serverTimestamp(),
+  updatedAt: serverTimestamp(),
+};
+let aliceQuizRef;
+await check('A creates own quiz', 'allow', async () => {
+  aliceQuizRef = await addDoc(collection(db, 'quizzes'), { ...quizPayload, ownerId: aliceUid });
+});
+await check('A lists own quizzes', 'allow', () =>
+  getDocs(query(collection(db, 'quizzes'), where('ownerId', '==', aliceUid))));
+// NOTE: the emulator serves queries WITHOUT enforcing composite indexes, so
+// this only proves the RULES allow the query. The static assertion at the
+// bottom of this file checks the index declaration the query needs in prod.
+await check('A finds quizzes using a question (delete-guard query)', 'allow', () =>
+  getDocs(query(
+    collection(db, 'quizzes'),
+    where('ownerId', '==', aliceUid),
+    where('questionIds', 'array-contains', aliceDocRef.id),
+  )));
+await check('A updates own quiz', 'allow', () =>
+  updateDoc(aliceQuizRef, { name: 'Friday Night Quiz v2', updatedAt: serverTimestamp() }));
+await check('A cannot create quiz with invalid answerMode', 'deny', () =>
+  addDoc(collection(db, 'quizzes'), { ...quizPayload, ownerId: aliceUid, answerMode: 'dictatorship' }));
+await check('A cannot create quiz with zero questions', 'deny', () =>
+  addDoc(collection(db, 'quizzes'), { ...quizPayload, ownerId: aliceUid, questionIds: [] }));
+await check('A cannot create quiz owned by someone else', 'deny', () =>
+  addDoc(collection(db, 'quizzes'), { ...quizPayload, ownerId: 'someone-else' }));
+await check('A cannot rewrite quiz createdAt on update', 'deny', () =>
+  updateDoc(aliceQuizRef, { createdAt: serverTimestamp() }));
+await check('A cannot create quiz with empty teams map', 'deny', () =>
+  addDoc(collection(db, 'quizzes'), { ...quizPayload, ownerId: aliceUid, teams: {} }));
+await check('A cannot create quiz with junk inside teams', 'deny', () =>
+  addDoc(collection(db, 'quizzes'), {
+    ...quizPayload,
+    ownerId: aliceUid,
+    teams: { A: { nested: { deep: 'junk' } }, B: { name: 'Team 2' } },
+  }));
+await signOut(auth);
+
+await signInGoogle('bob-sub', 'bob@example.com');
+await check("B cannot read A's quiz", 'deny', () => getDoc(aliceQuizRef));
+await check("B cannot list A's quizzes", 'deny', () =>
+  getDocs(query(collection(db, 'quizzes'), where('ownerId', '==', aliceUid))));
+await check('B cannot sweep quizzes via collection-group query', 'deny', () =>
+  getDocs(collectionGroup(db, 'quizzes')));
+await signOut(auth);
+
+await signInAnonymously(auth);
+await check("anon cannot read A's quiz", 'deny', () => getDoc(aliceQuizRef));
+await signOut(auth);
+
 // --- A cleans up ------------------------------------------------------------
 await signInGoogle('alice-sub', 'alice@example.com');
+await check('A deletes own quiz', 'allow', () => deleteDoc(aliceQuizRef));
 await check('A deletes own question', 'allow', () => deleteDoc(aliceDocRef));
+
+// --- Static assertion: the delete-guard's composite index is declared -------
+// (The emulator can't test index existence — see the note above the
+// delete-guard check — so at least assert the declaration file has it.)
+import { readFileSync } from 'node:fs';
+const indexes = JSON.parse(readFileSync(new URL('../firestore.indexes.json', import.meta.url), 'utf8'));
+const hasDeleteGuardIndex = (indexes.indexes ?? []).some((idx) =>
+  idx.collectionGroup === 'quizzes' &&
+  (idx.fields ?? []).some((f) => f.fieldPath === 'ownerId' && f.order === 'ASCENDING') &&
+  (idx.fields ?? []).some((f) => f.fieldPath === 'questionIds' && f.arrayConfig === 'CONTAINS'));
+results.push({
+  name: 'firestore.indexes.json declares the delete-guard composite index',
+  pass: hasDeleteGuardIndex,
+  got: hasDeleteGuardIndex ? 'declared' : 'MISSING',
+});
 
 // --- Report -----------------------------------------------------------------
 let failed = 0;

@@ -11,10 +11,12 @@ service cloud.firestore {
         && request.auth.token.firebase.sign_in_provider == 'google.com';
     }
 
-    // TODO(P5): per-element possibleAnswers shape checks (rules have no
-    // loops — needs indexed checks) and App Check. The library is only ever
-    // owner-read, and the P3 room copy strips/re-shapes the board, so junk
-    // here is self-inflicted until then.
+    // TODO(P5): per-element shape checks for questions.possibleAnswers AND
+    // quizzes.questionIds (rules have no loops — needs indexed checks), plus
+    // App Check. Owner-only reads make junk self-inflicted until then.
+    // P3 REQUIREMENT: createRoom must HARD-FAIL (not skip) when any
+    // questionId read is denied or missing, so a poisoned/foreign pointer
+    // can never launch a partial board.
     function isValidQuestion(data) {
       return data.questionText is string
         && data.questionText.size() > 0
@@ -42,6 +44,46 @@ service cloud.firestore {
         && request.resource.data.ownerId == resource.data.ownerId
         && request.resource.data.createdAt == resource.data.createdAt
         && isValidQuestion(request.resource.data);
+    }
+
+    function isValidQuiz(data) {
+      return data.name is string
+        && data.name.size() > 0
+        && data.name.size() <= 120
+        && data.answerMode in ['firstTap', 'majority']
+        && data.questionIds is list
+        && data.questionIds.size() >= 1
+        && data.questionIds.size() <= 50
+        && data.teams is map
+        && data.teams.keys().hasAll(['A', 'B'])
+        && data.teams.keys().hasOnly(['A', 'B'])
+        && data.teams.A is map
+        && data.teams.A.keys().hasOnly(['name'])
+        && data.teams.A.name is string
+        && data.teams.A.name.size() > 0
+        && data.teams.A.name.size() <= 40
+        && data.teams.B is map
+        && data.teams.B.keys().hasOnly(['name'])
+        && data.teams.B.name is string
+        && data.teams.B.name.size() > 0
+        && data.teams.B.name.size() <= 40
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && data.keys().hasOnly(['ownerId', 'name', 'answerMode', 'questionIds', 'teams', 'createdAt', 'updatedAt']);
+    }
+
+    // Saved quizzes — pointers into the owner's library, owner-only.
+    match /quizzes/{quizId} {
+      allow read, delete: if isQuizmaster()
+        && request.auth.uid == resource.data.ownerId;
+      allow create: if isQuizmaster()
+        && request.resource.data.ownerId == request.auth.uid
+        && isValidQuiz(request.resource.data);
+      allow update: if isQuizmaster()
+        && request.auth.uid == resource.data.ownerId
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && isValidQuiz(request.resource.data);
     }
 
     // Everything else is closed.

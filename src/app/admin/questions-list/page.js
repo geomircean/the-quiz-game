@@ -7,17 +7,27 @@ import Loading from '@/components/loading';
 import { ArrowUturnLeftIcon, PencilIcon, TrashIcon } from '@heroicons/react/20/solid';
 import { useQuestions } from '@/hooks/useQuestions';
 import { deleteQuestion } from '@/data/questions';
+import { quizzesUsingQuestion } from '@/data/quizzes';
+import { useAuth } from '@/context/auth-context';
 
 const QuestionsList = () => {
   const router = useRouter();
+  const { user } = useAuth();
   const { questions, error, isLoading } = useQuestions();
   const [deleteError, setDeleteError] = useState(null);
 
   const onDelete = async (id) => {
-    // TODO(P2): delete-guard — block deleting a question referenced by any
-    // quiz and list the quizzes that use it (ROADMAP.md §5 P2).
     setDeleteError(null);
     try {
+      // Delete-guard: a question cannot be deleted while any quiz uses it —
+      // that would leave a board with a missing tile. Name the offenders.
+      const usedBy = await quizzesUsingQuestion({ ownerId: user.uid, questionId: id });
+      if (usedBy.length > 0) {
+        return setDeleteError(
+          `This question is used by: ${usedBy.map((q) => q.name).join(', ')}. ` +
+          'Remove it from those quizzes first.'
+        );
+      }
       await deleteQuestion(id);
     } catch (err) {
       setDeleteError(err.message);
