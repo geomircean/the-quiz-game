@@ -1,9 +1,50 @@
 rules_version = '2';
 
-// Deny by default. Owner-scoped rules for questions/quizzes land in P1/P2;
-// never deploy Firebase's world-open "test mode" rules.
+// Deny by default — the rules ARE the backend (no server).
+// P1: owner-only question library. P2 adds quizzes; P5 hardens further.
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // The Quizmaster is a real (Google) account, never an anonymous guest.
+    function isQuizmaster() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'google.com';
+    }
+
+    // TODO(P5): per-element possibleAnswers shape checks (rules have no
+    // loops — needs indexed checks) and App Check. The library is only ever
+    // owner-read, and the P3 room copy strips/re-shapes the board, so junk
+    // here is self-inflicted until then.
+    function isValidQuestion(data) {
+      return data.questionText is string
+        && data.questionText.size() > 0
+        && data.questionText.size() <= 1000
+        && data.tileName is string
+        && data.tileName.size() > 0
+        && data.tileName.size() <= 120
+        && data.possibleAnswers is list
+        && data.possibleAnswers.size() >= 1
+        && data.possibleAnswers.size() <= 8
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && data.keys().hasOnly(['ownerId', 'questionText', 'tileName', 'possibleAnswers', 'createdAt', 'updatedAt']);
+    }
+
+    // Private question library — only the owner can see or touch it.
+    match /questions/{questionId} {
+      allow read, delete: if isQuizmaster()
+        && request.auth.uid == resource.data.ownerId;
+      allow create: if isQuizmaster()
+        && request.resource.data.ownerId == request.auth.uid
+        && isValidQuestion(request.resource.data);
+      allow update: if isQuizmaster()
+        && request.auth.uid == resource.data.ownerId
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && isValidQuestion(request.resource.data);
+    }
+
+    // Everything else is closed.
     match /{document=**} {
       allow read, write: if false;
     }

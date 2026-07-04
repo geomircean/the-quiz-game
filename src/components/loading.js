@@ -1,5 +1,5 @@
 const Loading = () => (
-  <div>Loading a pretty loader from the top level next page.</div>
+  <div className="py-8 text-center italic">Loading…</div>
 );
 
 export default Loading;

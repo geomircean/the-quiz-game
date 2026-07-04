@@ -28,6 +28,8 @@ export const useQuizConfigStore = create((set, get) => ({
   setupSingleQuestion: () => set(state => {
     return { fullQuiz: [{ ...questionStruct, possibleAnswers: [{ ...answerStruct }] }] };
   }),
+  // Hydrate the single-question editor with an existing library question.
+  loadQuestion: (question) => set({ fullQuiz: [question] }),
   addAnswer: ({ questionIndex }) => set(state => {
     const { fullQuiz } = state;
     const { possibleAnswers } = fullQuiz[questionIndex];

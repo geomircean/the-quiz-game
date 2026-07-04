@@ -1,18 +1,27 @@
-import { useQuestionsStore } from '@/stores';
+'use client';
+
 import { motion } from 'framer-motion';
 import Loading from '@/components/loading';
+import { useQuestions } from '@/hooks/useQuestions';
 
+// Shows the signed-in Quizmaster's library as board-style tiles. Anonymous
+// visitors see nothing here — the library is private; players join games
+// from /play instead (P3).
 const LandingPageQuestions = ({ goToQuestion }) => {
-  const { isLoading, questions, visitedQuestions } = useQuestionsStore();
+  const { questions, isLoading } = useQuestions();
 
-  if (!questions) {
+  if (isLoading) {
+    return <Loading/>;
+  }
+
+  if (!questions?.length) {
     return <div>No questions found.</div>;
   }
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {questions.map(({ tileName, id, }, index) => (
-        <div key={`cards-${id ?? index}`} onClick={() => goToQuestion(index)}>
+      {questions.map(({ tileName, id }) => (
+        <div key={`cards-${id}`} onClick={() => goToQuestion(id)}>
           <motion.div
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}

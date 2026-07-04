@@ -1,5 +1,10 @@
 import { getApp, getApps, initializeApp } from 'firebase/app';
-import { connectAuthEmulator, getAuth } from 'firebase/auth';
+import {
+  GoogleAuthProvider,
+  connectAuthEmulator,
+  getAuth,
+  signInWithCredential,
+} from 'firebase/auth';
 import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
 import { connectDatabaseEmulator, getDatabase } from 'firebase/database';
 
@@ -45,4 +50,12 @@ if (
   connectFirestoreEmulator(db, '127.0.0.1', 8181);
   connectDatabaseEmulator(rtdb, '127.0.0.1', 9000);
   globalThis.__firebaseEmulatorsConnected = true;
+
+  // Emulator-only test hook: lets browser tooling sign in a fake Google user
+  // (the Auth emulator accepts arbitrary claims). The whole block is guarded
+  // by a build-time env check, so it is dead code in production bundles.
+  globalThis.__QUIZ_DEV__ = {
+    signInFakeGoogle: (sub, email) =>
+      signInWithCredential(auth, GoogleAuthProvider.credential(JSON.stringify({ sub, email }))),
+  };
 }

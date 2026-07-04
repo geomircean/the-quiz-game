@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "node scripts/assert-clean-bundle.mjs",
     "start": "next start",
     "lint": "eslint .",
     "emulators": "firebase emulators:start --project demo-the-quiz-game",

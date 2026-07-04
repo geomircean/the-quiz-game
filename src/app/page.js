@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
+import { Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuestionsStore } from '@/stores';
 import { Button } from '@/components';
@@ -9,21 +9,11 @@ import LandingPageQuestions from '@/components/landing-page-questions';
 
 const Home = () => {
   const router = useRouter();
-  const {
-    questions,
-    scoreTeamA,
-    scoreTeamB,
-    getQuestions
-  } = useQuestionsStore();
+  const { scoreTeamA, scoreTeamB } = useQuestionsStore();
   const goToAdmin = () => router.push('/admin');
   // TODO(P3/P4): this page becomes the public join screen; the board of
   // tiles moves to the host's room view — see ROADMAP.md §5.
   const goToQuestion = () => {};
-  useEffect(() => {
-    if (!questions) {
-      getQuestions();
-    }
-  }, [questions, getQuestions]);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-purple-950 to-indigo-950">
