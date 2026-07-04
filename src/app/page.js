@@ -1,14 +1,11 @@
 'use client';
 
-// import Image from "next/image";
-import { Suspense, use, useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuestionsStore } from '@/stores';
 import { Button } from '@/components';
 import { Cog8ToothIcon } from '@heroicons/react/20/solid';
 import LandingPageQuestions from '@/components/landing-page-questions';
-
-// import useGetAllQuestions from '@/hooks/useGetAllQuestions';
 
 const Home = () => {
   const router = useRouter();
@@ -16,16 +13,12 @@ const Home = () => {
     questions,
     scoreTeamA,
     scoreTeamB,
-    setActiveQuestion,
-    setVisitedQuestions,
     getQuestions
   } = useQuestionsStore();
   const goToAdmin = () => router.push('/admin');
-  const goToQuestion = index => {
-    setActiveQuestion(index);
-    setVisitedQuestions(index);
-    router.push(`/question/${index}`);
-  };
+  // TODO(P3/P4): this page becomes the public join screen; the board of
+  // tiles moves to the host's room view — see ROADMAP.md §5.
+  const goToQuestion = () => {};
   useEffect(() => {
     if (!questions) {
       getQuestions();

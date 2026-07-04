@@ -1,8 +1,8 @@
 const hasContent = text => typeof text === 'string' && text && text.length > 0 && text.trim().length > 0;
 
 export const validateNewQuiz = ({ quizName, fullQuiz }) => {
-  // const isQuizNameValid = !quizName;
-  let isAllValid = !quizName;
+  const isQuizNameValid = hasContent(quizName);
+  let isAllValid = isQuizNameValid;
 
   const fullQuizValidation = [];
 
@@ -16,19 +16,19 @@ export const validateNewQuiz = ({ quizName, fullQuiz }) => {
   return {
     validations: {
       isAllValid,
-      // isQuizNameValid,
+      isQuizNameValid,
       fullQuizValidation,
     }
   };
 }
 
 export const validateQuestion = (question) => {
-  const description = !hasContent(question.description);
-  const category = !hasContent(question.category);
+  const questionText = !hasContent(question.questionText);
+  const tileName = !hasContent(question.tileName);
   const hasNoCorrectAnswers = !question.possibleAnswers.find(({ isCorrect }) => isCorrect);
   let isValid = true;
 
-  if (hasNoCorrectAnswers || description || category) {
+  if (hasNoCorrectAnswers || questionText || tileName) {
     isValid = false;
   }
   const possibleAnswers = [];
@@ -38,5 +38,5 @@ export const validateQuestion = (question) => {
     if (!answerMessage) isValid = false;
   });
 
-  return { hasNoCorrectAnswers, possibleAnswers, description, category, isValid, };
+  return { hasNoCorrectAnswers, possibleAnswers, questionText, tileName, isValid, };
 }

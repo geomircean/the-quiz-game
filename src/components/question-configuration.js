@@ -10,8 +10,8 @@ import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
 const QuestionConfiguration = ({ questionIndex, validation }) => {
   const {
     fullQuiz,
-    changeQuestionDescription,
-    changeQuestionCategory,
+    changeQuestionText,
+    changeTileName,
     addAnswer,
     deleteAnswer,
     updateAnswer,
@@ -41,21 +41,20 @@ const QuestionConfiguration = ({ questionIndex, validation }) => {
             Question Text
             <Input
               type="text"
-              value={currentQuestion.description}
-              // className='text-black p-1'
-              onChange={(e) => changeQuestionDescription({ questionIndex, value: e.target.value })}
+              value={currentQuestion.questionText}
+              onChange={(e) => changeQuestionText({ questionIndex, value: e.target.value })}
             />
           </label>
           <label className="flex flex-col justify-evenly w-full items-start gap-2 py-2">
-            Category
+            Tile Name (short label shown on the board)
             <Input
               type="text"
-              value={currentQuestion.category}
-              // className='text-black p-1'
-              onChange={(e) => changeQuestionCategory({ questionIndex, value: e.target.value })}
+              value={currentQuestion.tileName}
+              onChange={(e) => changeTileName({ questionIndex, value: e.target.value })}
             />
           </label>
-          {/*{validation.description && <div>Please fill in the answer.</div>}*/}
+          {validation?.questionText && <div className="error-message">Please fill in the question text.</div>}
+          {validation?.tileName && <div className="error-message">Please fill in the tile name.</div>}
         </div>
         <div>
           {
@@ -98,7 +97,7 @@ const QuestionConfiguration = ({ questionIndex, validation }) => {
                 </div>
               </div>
             ))}
-          {validation?.hasNoCorectAnswers && <div className="error-message">Please select the correct answer.</div>}
+          {validation?.hasNoCorrectAnswers && <div className="error-message">Please select the correct answer.</div>}
 
           {currentQuestion.possibleAnswers.length < 4 &&
             <Button className="border-2 border-foreground hover:bg-cyan-900 p-3 mt-4"

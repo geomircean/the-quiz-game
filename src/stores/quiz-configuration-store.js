@@ -1,13 +1,11 @@
 import { create } from 'zustand';
 import { produce } from 'immer';
 import { validateNewQuiz } from '@/app/validations';
-import { saveQuiz } from '@/services/manage-quiz-api';
-
 
 const answerStruct = { answerMessage: '', isCorrect: false };
 const questionStruct = {
-  description: '',
-  category: '',
+  questionText: '',
+  tileName: '',
   possibleAnswers: [],
 };
 
@@ -55,34 +53,29 @@ export const useQuizConfigStore = create((set, get) => ({
 
     return { fullQuiz };
   }),
-  changeQuestionDescription: ({ questionIndex, value }) => set(state => {
+  changeQuestionText: ({ questionIndex, value }) => set(state => {
     const { fullQuiz } = state;
-    fullQuiz[questionIndex].description = value;
+    fullQuiz[questionIndex].questionText = value;
     return { fullQuiz };
   }),
-  changeQuestionCategory: ({ questionIndex, value }) => set(state => {
+  changeTileName: ({ questionIndex, value }) => set(state => {
     const { fullQuiz } = state;
-    fullQuiz[questionIndex].category = value;
+    fullQuiz[questionIndex].tileName = value;
 
     return { fullQuiz };
   }),
   saveQuiz: async () => {
-    const fullQuiz = get().fullQuiz;
-    const { validations } = validateNewQuiz({ fullQuiz });
+    const { fullQuiz, quizName } = get();
+    const { validations } = validateNewQuiz({ quizName, fullQuiz });
     const { isAllValid } = validations;
-    console.log(fullQuiz);
 
     if (!isAllValid) {
-      console.log('not valid', validations);
       return set({ validations });
     }
 
-    try {
-      const res = await saveQuiz(fullQuiz);
-      return set({ isAllValid, res, validations, fullQuiz: [] });
-    } catch (error) {
-      return set({ isAllValid: false, error: error.message, });
-    }
+    // TODO(P2): persist to Firestore quizzes/{id} with questionIds pointers
+    // (src/data/quizzes.js) — see ROADMAP.md §5 P2.
+    return set({ validations, fullQuiz: [] });
   },
   resetQuiz: () => set(state => ({
     fullQuiz: [],
@@ -92,8 +85,4 @@ export const useQuizConfigStore = create((set, get) => ({
       fullQuizValidation: {},
     }
   })),
-  saveQuestion: () => set(state => {
-    const fullQuizValidation = validateNewQuiz(state);
-    return { validations: { ...state.validations, fullQuizValidation, } };
-  }),
 }));
