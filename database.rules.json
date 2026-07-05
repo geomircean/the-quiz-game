@@ -52,14 +52,52 @@
         },
         "players": {
           "$uid": {
-            ".write": "auth != null && auth.uid === $uid && data.parent().parent().child('hostId').exists()",
+            ".write": "auth != null && auth.uid === $uid && data.parent().parent().child('hostId').exists() && (root.child('rooms').child($code).child('status').val() === 'lobby' || (data.exists() && newData.child('team').val() === data.child('team').val() && newData.child('name').val() === data.child('name').val()))",
             ".validate": "newData.hasChildren(['name', 'team', 'connected'])",
             "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40" },
             "team": { ".validate": "newData.val() === 'A' || newData.val() === 'B'" },
             "connected": { ".validate": "newData.isBoolean()" },
             "$other": { ".validate": false }
           }
+        },
+        "winner": {
+          ".write": "auth != null && root.child('rooms').child($code).child('hostId').val() === auth.uid",
+          ".validate": "newData.val() === 'A' || newData.val() === 'B' || newData.val() === 'tie'"
+        },
+        "reveals": {
+          "$tileId": {
+            ".write": "auth != null && root.child('rooms').child($code).child('hostId').val() === auth.uid",
+            ".validate": "newData.hasChildren(['correctIndex', 'wasCorrect', 'team'])",
+            "correctIndex": { ".validate": "newData.isNumber()" },
+            "teamChoice": { ".validate": "newData.isNumber()" },
+            "wasCorrect": { ".validate": "newData.isBoolean()" },
+            "team": { ".validate": "newData.val() === 'A' || newData.val() === 'B'" },
+            "$other": { ".validate": false }
+          }
+        },
+        "taps": {
+          "$tileId": {
+            "$uid": {
+              ".write": "auth != null && auth.uid === $uid && root.child('rooms').child($code).child('status').val() === 'playing' && root.child('rooms').child($code).child('activeTileId').val() === $tileId && root.child('rooms').child($code).child('revealed').val() !== true && root.child('rooms').child($code).child('players').child(auth.uid).child('team').val() === root.child('rooms').child($code).child('currentTurn').val() && (root.child('rooms').child($code).child('answerMode').val() === 'majority' || !data.exists())",
+              ".validate": "newData.hasChildren(['answerIndex', 'at'])",
+              "answerIndex": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7" },
+              "at": { ".validate": "newData.val() === now" },
+              "$other": { ".validate": false }
+            }
+          }
         }
+      }
+    },
+    "roomKeys": {
+      "$code": {
+        ".read": "auth != null && data.child('hostId').val() === auth.uid",
+        ".write": "auth != null && auth.token.firebase.sign_in_provider === 'google.com' && ((!data.exists() && newData.child('hostId').val() === auth.uid && root.child('rooms').child($code).child('hostId').val() === auth.uid) || data.child('hostId').val() === auth.uid)",
+        ".validate": "newData.hasChildren(['hostId', 'key'])",
+        "hostId": { ".validate": "newData.isString()" },
+        "key": {
+          "$tileId": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7" }
+        },
+        "$other": { ".validate": false }
       }
     }
   }

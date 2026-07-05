@@ -77,7 +77,7 @@ rooms/{roomCode}
 Rules operate at document/node granularity — they cannot hide a *field* inside a readable node. So the split is **structural**, enforced by code, not by rules alone:
 
 1. When the host starts a game, it copies each tile into `rooms/{code}/board/{tileId}` as `{ tileName, questionText, possibleAnswers: [{ answerMessage }] }` — **`isCorrect` is stripped**.
-2. The correct answer is held on the **host screen only** (read from Firestore), never written into the room's player-readable board.
+2. The correct answer is held on the **host screen only** (read from Firestore), never written into the room's player-readable board. *(Amended during build: the key is persisted in a rules-sealed top-level RTDB `roomKeys/{code}` node readable ONLY by the host — so a host refresh keeps the key — while the `rooms/` subtree stays key-free; member read grants cascade, which is exactly why the key cannot live inside `rooms/{code}`.)*
 3. At reveal, the host compares the resolved team choice against its held answer, scores, and writes only the *outcome* (revealed flag, updated scores) back to the room.
 
 A P5 emulator/rules test explicitly asserts that no player-reachable payload ever contains `isCorrect` before reveal.

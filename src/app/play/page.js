@@ -7,6 +7,9 @@ import Loading from '@/components/loading';
 import { useAuth } from '@/context/auth-context';
 import { useRoom } from '@/hooks/useRoom';
 import { joinRoom, normalizeRoomCode, watchPresence } from '@/data/rooms';
+import { submitTap } from '@/data/game';
+import AnswerItem from '@/components/answer-item';
+import { getAlpha } from '@/utils';
 
 const isPermissionDenied = (error) =>
   error?.code === 'PERMISSION_DENIED' || /permission[_ ]?denied/i.test(String(error?.message ?? ''));
@@ -134,8 +137,122 @@ const PlayInner = () => {
   const myPlayer = room.players?.[user.uid];
   const teammates = Object.values(room.players ?? {}).filter((p) => p.team === myPlayer?.team);
   const teamName = room.teams?.[myPlayer?.team]?.name ?? myPlayer?.team;
+  const scores = (
+    <p className="text-center text-sm">
+      {room.teams?.A?.name ?? 'Team 1'}: {room.scores?.A ?? 0} · {room.teams?.B?.name ?? 'Team 2'}: {room.scores?.B ?? 0}
+    </p>
+  );
 
-  // Lobby view — the live question/answer surface arrives in P4.
+  // --- Ended -----------------------------------------------------------------
+  if (room.status === 'ended') {
+    const winnerLabel = room.winner === 'tie'
+      ? "It's a tie!"
+      : `${room.teams?.[room.winner]?.name ?? room.winner} wins!`;
+    const weWon = room.winner === myPlayer?.team;
+    return (
+      <Card className="mx-auto max-w-md bg-purple-800/40 text-purple-100 text-center">
+        <CardHeader>
+          <CardTitle className="text-3xl">{winnerLabel}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2">
+          {room.winner !== 'tie' && <p>{weWon ? 'Congratulations! 🎉' : 'Better luck next time.'}</p>}
+          {scores}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // --- Playing: active question ------------------------------------------------
+  const activeTileId = room.activeTileId;
+  if (room.status === 'playing' && activeTileId && room.board?.[activeTileId]) {
+    const tile = room.board[activeTileId];
+    const reveal = room.reveals?.[activeTileId];
+    const isMyTurn = myPlayer?.team === room.currentTurn;
+    const myTap = room.taps?.[activeTileId]?.[user.uid];
+    const firstTapLocked = room.answerMode === 'firstTap'
+      && Object.entries(room.taps?.[activeTileId] ?? {})
+        .some(([uid]) => room.players?.[uid]?.team === room.currentTurn);
+    const canTap = isMyTurn && !room.revealed && !firstTapLocked;
+    const turnTeamName = room.teams?.[room.currentTurn]?.name ?? room.currentTurn;
+
+    const tap = async (index) => {
+      try {
+        await submitTap({ code, tileId: activeTileId, uid: user.uid, answerIndex: index });
+      } catch {
+        // Rules rejected it (turn flipped / revealed / firstTap locked) —
+        // the live snapshot will already reflect why.
+      }
+    };
+
+    return (
+      <Card className="mx-auto max-w-2xl bg-purple-800/40 text-purple-100">
+        <CardHeader>
+          <em>{tile.tileName}</em>
+          <CardTitle className="text-2xl">{tile.questionText}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          {!isMyTurn && !room.revealed && (
+            <p className="text-sm italic text-center">{turnTeamName} is answering — sit tight.</p>
+          )}
+          {isMyTurn && !room.revealed && room.answerMode === 'majority' && (
+            <p className="text-sm italic text-center">Everyone taps — most taps wins (a tie is wrong!).</p>
+          )}
+          {isMyTurn && !room.revealed && room.answerMode === 'firstTap' && (
+            <p className="text-sm italic text-center">
+              {firstTapLocked ? 'Your team&apos;s answer is locked in.' : 'First tap locks it for the whole team!'}
+            </p>
+          )}
+          {(tile.possibleAnswers ?? []).map(({ answerMessage }, index) => (
+            <AnswerItem
+              key={index}
+              index={index}
+              isCorrect={room.revealed && reveal ? index === reveal.correctIndex : false}
+              showCorrectAnswer={!!room.revealed && !!reveal}
+              isAnswerSelected={
+                room.revealed && reveal
+                  ? index === reveal.teamChoice
+                  : myTap?.answerIndex === index
+              }
+              onClick={() => canTap && tap(index)}
+            >
+              <span className="mr-4 font-bold">{getAlpha(index)}.</span>
+              {answerMessage}
+            </AnswerItem>
+          ))}
+          {room.revealed && reveal && (
+            <p className="text-center text-lg">
+              {reveal.wasCorrect
+                ? `Correct! +1 for ${room.teams?.[reveal.team]?.name ?? reveal.team}.`
+                : reveal.teamChoice === undefined || reveal.teamChoice === null
+                  ? `No valid team answer${room.answerMode === 'majority' ? ' (no taps, or the votes tied)' : ''} — no points.`
+                  : 'Wrong answer — no points.'}
+            </p>
+          )}
+          {scores}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // --- Playing: between questions ----------------------------------------------
+  if (room.status === 'playing') {
+    const isMyTurn = myPlayer?.team === room.currentTurn;
+    const turnTeamName = room.teams?.[room.currentTurn]?.name ?? room.currentTurn;
+    return (
+      <Card className="mx-auto max-w-md bg-purple-800/40 text-purple-100 text-center">
+        <CardContent className="flex flex-col gap-3 p-6">
+          <p className="text-xl">
+            {isMyTurn
+              ? 'Your team picks a tile — shout it out, the host clicks it!'
+              : `${turnTeamName} is picking a tile…`}
+          </p>
+          {scores}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // --- Lobby ---------------------------------------------------------------
   return (
     <Card className="mx-auto max-w-md bg-purple-800/40 text-purple-100">
       <CardHeader>
@@ -143,11 +260,7 @@ const PlayInner = () => {
       </CardHeader>
       <CardContent className="flex flex-col gap-3 text-left">
         <p>You&apos;re in, <strong>{myPlayer?.name}</strong> — playing for <strong>{teamName}</strong>.</p>
-        <p className="text-sm italic">
-          {room.status === 'lobby'
-            ? 'Waiting for the host to start the game…'
-            : 'The game is on — questions appear here in P4.'}
-        </p>
+        <p className="text-sm italic">Waiting for the host to start the game…</p>
         <div>
           <span className="text-sm">Your team ({teammates.length}):</span>
           <ul className="text-sm list-disc list-inside">

@@ -37,12 +37,16 @@ const buildBoard = ({ quiz, questions }) => {
     if (!question) {
       throw new Error('This quiz references a question that no longer exists — edit the quiz first.');
     }
+    const correctIndex = question.possibleAnswers.findIndex(({ isCorrect }) => isCorrect);
+    if (correctIndex === -1) {
+      throw new Error(`"${question.tileName}" has no correct answer marked — edit that question first.`);
+    }
     board[questionId] = {
       tileName: question.tileName,
       questionText: question.questionText,
       possibleAnswers: question.possibleAnswers.map(({ answerMessage }) => ({ answerMessage })),
     };
-    answerKey[questionId] = question.possibleAnswers.findIndex(({ isCorrect }) => isCorrect);
+    answerKey[questionId] = correctIndex;
   }
   return { board, answerKey };
 };
@@ -71,6 +75,11 @@ export const createRoom = async ({ hostId, quiz, questions }) => {
     const code = randomCode();
     try {
       await set(ref(rtdb, `rooms/${code}`), room);
+      // The answer key lives OUTSIDE rooms/ (member reads cascade over the
+      // whole room subtree) in a host-only node. A stale foreign key at
+      // this code is a permission error → retry with a fresh code (the
+      // just-claimed room node is orphaned but inert).
+      await set(ref(rtdb, `roomKeys/${code}`), { hostId, key: answerKey });
       return { code, answerKey };
     } catch (error) {
       if (!isPermissionDenied(error)) throw error;
@@ -81,6 +90,9 @@ export const createRoom = async ({ hostId, quiz, questions }) => {
   }
   throw new Error('Could not create the room — try again, and if it keeps failing re-save the quiz first.');
 };
+
+export const subscribeToAnswerKey = (code, onChange, onError) =>
+  onValue(ref(rtdb, `roomKeys/${code}`), (snapshot) => onChange(snapshot.val()), onError);
 
 export const joinRoom = ({ code, uid, name, team }) =>
   set(ref(rtdb, `rooms/${code}/players/${uid}`), { name, team, connected: true });
