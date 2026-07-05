@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import {
   GoogleAuthProvider,
   browserLocalPersistence,
@@ -34,17 +34,17 @@ export const AuthProvider = ({ children }) => {
   // The Quizmaster signs in with Google; players get an invisible guest
   // identity (anonymous auth). LOCAL persistence keeps the same uid across
   // refreshes, which is what lets a locked phone slide back into its team.
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = useCallback(async () => {
     await setPersistence(auth, browserLocalPersistence);
     await signInWithPopup(auth, new GoogleAuthProvider());
-  };
+  }, []);
 
-  const signInAsGuest = async () => {
+  const signInAsGuest = useCallback(async () => {
     await setPersistence(auth, browserLocalPersistence);
     await signInAnonymously(auth);
-  };
+  }, []);
 
-  const logOut = () => signOut(auth);
+  const logOut = useCallback(() => signOut(auth), []);
 
   // Mirror the security rules: a Quizmaster is specifically a Google account
   // (firestore.rules checks sign_in_provider == 'google.com').

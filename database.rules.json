@@ -1,6 +1,66 @@
 {
   "rules": {
-    ".read": false,
-    ".write": false
+    "rooms": {
+      "$code": {
+        ".read": "auth != null && (data.child('hostId').val() === auth.uid || data.child('players').child(auth.uid).exists())",
+        ".write": "auth != null && !data.exists() && newData.child('hostId').val() === auth.uid && auth.token.firebase.sign_in_provider === 'google.com'",
+        ".validate": "newData.hasChildren(['hostId', 'quizId', 'status', 'answerMode', 'scores', 'board', 'teams'])",
+        "answerKey": { ".validate": false },
+        "status": {
+          ".write": "auth != null && root.child('rooms').child($code).child('hostId').val() === auth.uid",
+          ".validate": "newData.val() === 'lobby' || newData.val() === 'playing' || newData.val() === 'ended'"
+        },
+        "answerMode": {
+          ".validate": "newData.val() === 'firstTap' || newData.val() === 'majority'"
+        },
+        "currentTurn": {
+          ".write": "auth != null && root.child('rooms').child($code).child('hostId').val() === auth.uid",
+          ".validate": "newData.val() === 'A' || newData.val() === 'B'"
+        },
+        "revealed": {
+          ".write": "auth != null && root.child('rooms').child($code).child('hostId').val() === auth.uid",
+          ".validate": "newData.isBoolean()"
+        },
+        "activeTileId": {
+          ".write": "auth != null && root.child('rooms').child($code).child('hostId').val() === auth.uid",
+          ".validate": "newData.isString() || newData.val() === null"
+        },
+        "usedTiles": {
+          ".write": "auth != null && root.child('rooms').child($code).child('hostId').val() === auth.uid",
+          "$tileId": { ".validate": "newData.isBoolean()" }
+        },
+        "scores": {
+          ".write": "auth != null && root.child('rooms').child($code).child('hostId').val() === auth.uid",
+          "A": { ".validate": "newData.isNumber()" },
+          "B": { ".validate": "newData.isNumber()" },
+          "$other": { ".validate": false }
+        },
+        "board": {
+          "$tileId": {
+            ".validate": "newData.hasChildren(['tileName', 'questionText', 'possibleAnswers'])",
+            "tileName": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 120" },
+            "questionText": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1000" },
+            "possibleAnswers": {
+              "$answerIndex": {
+                ".validate": "newData.hasChildren(['answerMessage'])",
+                "answerMessage": { ".validate": "newData.isString() && newData.val().length <= 500" },
+                "$other": { ".validate": false }
+              }
+            },
+            "$other": { ".validate": false }
+          }
+        },
+        "players": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && data.parent().parent().child('hostId').exists()",
+            ".validate": "newData.hasChildren(['name', 'team', 'connected'])",
+            "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40" },
+            "team": { ".validate": "newData.val() === 'A' || newData.val() === 'B'" },
+            "connected": { ".validate": "newData.isBoolean()" },
+            "$other": { ".validate": false }
+          }
+        }
+      }
+    }
   }
 }

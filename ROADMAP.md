@@ -154,7 +154,7 @@ Phases follow the plan's order. Each ships something usable and fails closed on 
 - `src/data/rooms.js` `createRoom(quizId)`: generate a 4-char ambiguity-free code (`23456789ABCDEFGHJKLMNPQRSTUVWXYZ`), copy the board into RTDB **without `isCorrect`**, set `status:'lobby'`, `scores:{A:0,B:0}`. (If you prefer a Firestore `codes/{CODE}` claim doc for atomic uniqueness, use a `runTransaction` with ~6 retries; RTDB codes can also be claimed transactionally.)
 - Player join (`/play?room=CODE`): `signInAnonymously` lazily → uid; resolve code → room; show name + Team A/B picker; write `players/{uid} = { name, team, connected }`.
 - Presence/reconnect: `onDisconnect()` clears `connected`; on `/play` mount, if `players/{uid}` already exists, skip the join UI and slide back into the team's current view.
-- Refactor `active-quiz-store.js` into a projection: hold `role`/`roomCode`/`roomSnapshot`/`myPlayer` + derived selectors (`currentTile`, `isMyTurn`, `scores`, `status`); add `useRoom()` = `onValue(rooms/{code})`. Remove local score/selected-answer mutation logic.
+- Refactor `active-quiz-store.js` into a projection: hold `role`/`roomCode`/`roomSnapshot`/`myPlayer` + derived selectors (`currentTile`, `isMyTurn`, `scores`, `status`); add `useRoom()` = `onValue(rooms/{code})`. Remove local score/selected-answer mutation logic. *(Amended during build: the store was deleted, not refactored — `useRoom()` IS the room projection; P4 derived selectors live in `useRoom`/`lib/game.js`, not a zustand store.)*
 - Land room + player + presence rules with this feature.
 
 **Ships:** the QM starts a game and sees a room code + a live roster; players on phones type the code, enter a name, pick a team, and appear in the lobby; a refresh re-materializes the same player.

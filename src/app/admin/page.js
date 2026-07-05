@@ -6,6 +6,7 @@ import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components';
 import Loading from '@/components/loading';
 import { PencilIcon, TrashIcon } from '@heroicons/react/20/solid';
 import { useQuizzes } from '@/hooks/useQuizzes';
+import { useLaunchQuiz } from '@/hooks/useLaunchQuiz';
 import { deleteQuiz } from '@/data/quizzes';
 
 const BASE_URL = '/admin';
@@ -18,6 +19,7 @@ const ANSWER_MODE_LABELS = {
 const AdminLanding = () => {
   const router = useRouter();
   const { quizzes, error, isLoading } = useQuizzes();
+  const { launch, isLaunching, launchError } = useLaunchQuiz();
   const [deleteError, setDeleteError] = useState(null);
 
   const onDeleteQuiz = async (id, name) => {
@@ -47,6 +49,7 @@ const AdminLanding = () => {
         <h3 className="text-xl pb-4">Existing Quizzes</h3>
         {error && <div className="error-message">Could not load quizzes: {error.message}</div>}
         {deleteError && <div className="error-message">Could not delete: {deleteError}</div>}
+        {launchError && <div className="error-message">Could not launch: {launchError}</div>}
         {isLoading && <Loading/>}
         {!isLoading && !quizzes?.length && (
           <p className="italic">No quizzes yet — configure your first one.</p>
@@ -62,11 +65,13 @@ const AdminLanding = () => {
                   {questionIds?.length ?? 0} tiles · {ANSWER_MODE_LABELS[answerMode] ?? answerMode}
                 </p>
                 <div className="flex gap-2 items-center">
-                  {/* TODO(P3): Launch → create a live room from this quiz */}
-                  <span className="flex flex-col items-center">
-                    <Button size="sm" disabled>Launch</Button>
-                    <span className="text-xs italic opacity-70">arrives in P3</span>
-                  </span>
+                  <Button
+                    size="sm"
+                    disabled={isLaunching}
+                    onClick={() => launch(quizzes.find((q) => q.id === id))}
+                  >
+                    {isLaunching ? 'Starting…' : 'Launch'}
+                  </Button>
                   <Button size="sm" onClick={() => router.push(`${BASE_URL}/new-quiz-configuration/?id=${id}`)}>
                     <PencilIcon className="size-4 mr-1"/> Edit
                   </Button>

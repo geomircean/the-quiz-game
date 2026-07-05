@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint .",
     "emulators": "firebase emulators:start --project demo-the-quiz-game",
+    "verify:rules": "node scripts/verify-rules.mjs && node scripts/verify-rtdb-rules.mjs",
     "deploy": "echo 'No production Firebase project configured yet: add a prod alias to .firebaserc, then use: next build && firebase deploy --project prod --only hosting,firestore,database' && exit 1"
   },
   "dependencies": {

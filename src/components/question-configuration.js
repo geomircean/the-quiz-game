@@ -79,6 +79,7 @@ const QuestionConfiguration = ({ questionIndex, validation }) => {
                             type="text"
                             value={answerMessage}
                             required
+                            maxLength={500}
                             onChange={(ev) => changeAnswer(ev, index)}
                           />
                         </label>
