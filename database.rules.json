@@ -6,6 +6,24 @@
         ".write": "auth != null && !data.exists() && newData.child('hostId').val() === auth.uid && auth.token.firebase.sign_in_provider === 'google.com'",
         ".validate": "newData.hasChildren(['hostId', 'quizId', 'status', 'answerMode', 'scores', 'board', 'teams'])",
         "answerKey": { ".validate": false },
+        "hostId": { ".validate": "newData.isString()" },
+        "quizId": { ".validate": "newData.isString()" },
+        "quizName": { ".validate": "newData.isString() && newData.val().length <= 120" },
+        "createdAt": { ".validate": "newData.isNumber()" },
+        "teams": {
+          ".validate": "newData.hasChildren(['A', 'B'])",
+          "A": {
+            ".validate": "newData.hasChildren(['name'])",
+            "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40" },
+            "$other": { ".validate": false }
+          },
+          "B": {
+            ".validate": "newData.hasChildren(['name'])",
+            "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40" },
+            "$other": { ".validate": false }
+          },
+          "$other": { ".validate": false }
+        },
         "status": {
           ".write": "auth != null && root.child('rooms').child($code).child('hostId').val() === auth.uid",
           ".validate": "newData.val() === 'lobby' || newData.val() === 'playing' || newData.val() === 'ended'"
@@ -85,7 +103,8 @@
               "$other": { ".validate": false }
             }
           }
-        }
+        },
+        "$other": { ".validate": false }
       }
     },
     "roomKeys": {

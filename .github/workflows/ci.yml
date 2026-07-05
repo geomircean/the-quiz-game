@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      # Demo values — real config only exists in deploy environments.
+      # NEXT_PUBLIC_* are inlined at build time, so the build needs them.
+      NEXT_PUBLIC_FIREBASE_API_KEY: demo-api-key
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: demo-the-quiz-game.firebaseapp.com
+      NEXT_PUBLIC_FIREBASE_DATABASE_URL: http://127.0.0.1:9000/?ns=demo-the-quiz-game-default-rtdb
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: demo-the-quiz-game
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: demo-the-quiz-game.appspot.com
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+      NEXT_PUBLIC_FIREBASE_APP_ID: 1:000000000000:web:demo
+      NEXT_PUBLIC_FIREBASE_USE_EMULATORS: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # The Firestore/RTDB emulators need a JVM.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # Also runs the postbuild guard asserting the emulator test hook
+      # never reaches the production bundle.
+      - name: Build (static export + bundle guard)
+        run: npm run build
+
+      # Security rules are the backend — a rules regression fails the build.
+      - name: Verify security rules against the emulators
+        run: npx firebase emulators:exec --project demo-the-quiz-game --only auth,firestore,database "npm run verify:rules"

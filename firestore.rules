@@ -11,12 +11,35 @@ service cloud.firestore {
         && request.auth.token.firebase.sign_in_provider == 'google.com';
     }
 
-    // TODO(P5): per-element shape checks for questions.possibleAnswers AND
-    // quizzes.questionIds (rules have no loops — needs indexed checks), plus
-    // App Check. Owner-only reads make junk self-inflicted until then.
-    // P3 REQUIREMENT: createRoom must HARD-FAIL (not skip) when any
-    // questionId read is denied or missing, so a poisoned/foreign pointer
-    // can never launch a partial board.
+    // Rules have no loops, so per-element list validation is unrolled over
+    // the 8-answer cap. RESIDUAL (accepted): quizzes.questionIds elements
+    // stay untyped — unrolling 50 is impractical; the protection is that
+    // createRoom HARD-FAILS when any pointer is denied/missing, and the
+    // RTDB board rules validate everything a player can ever read.
+    // DEPLOY STEP: enable App Check on Firestore + RTDB in the console.
+    function isValidAnswer(answer) {
+      return answer is map
+        && answer.keys().hasOnly(['answerMessage', 'isCorrect'])
+        && answer.answerMessage is string
+        && answer.answerMessage.size() > 0
+        && answer.answerMessage.size() <= 500
+        && answer.isCorrect is bool;
+    }
+
+    function isValidAnswersList(answers) {
+      return answers is list
+        && answers.size() >= 1
+        && answers.size() <= 8
+        && isValidAnswer(answers[0])
+        && (answers.size() <= 1 || isValidAnswer(answers[1]))
+        && (answers.size() <= 2 || isValidAnswer(answers[2]))
+        && (answers.size() <= 3 || isValidAnswer(answers[3]))
+        && (answers.size() <= 4 || isValidAnswer(answers[4]))
+        && (answers.size() <= 5 || isValidAnswer(answers[5]))
+        && (answers.size() <= 6 || isValidAnswer(answers[6]))
+        && (answers.size() <= 7 || isValidAnswer(answers[7]));
+    }
+
     function isValidQuestion(data) {
       return data.questionText is string
         && data.questionText.size() > 0
@@ -24,9 +47,7 @@ service cloud.firestore {
         && data.tileName is string
         && data.tileName.size() > 0
         && data.tileName.size() <= 120
-        && data.possibleAnswers is list
-        && data.possibleAnswers.size() >= 1
-        && data.possibleAnswers.size() <= 8
+        && isValidAnswersList(data.possibleAnswers)
         && data.createdAt is timestamp
         && data.updatedAt is timestamp
         && data.keys().hasOnly(['ownerId', 'questionText', 'tileName', 'possibleAnswers', 'createdAt', 'updatedAt']);

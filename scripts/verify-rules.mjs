@@ -99,17 +99,34 @@ await check('A cannot rewrite createdAt on update', 'deny', () =>
   updateDoc(aliceDocRef, { createdAt: serverTimestamp() }));
 await check('A cannot write to an arbitrary collection', 'deny', () =>
   setDoc(doc(db, 'random-collection/some-doc'), { hello: 'world' }));
-// KNOWN GAP (P5): rules cannot loop over list elements, so nested junk
-// inside possibleAnswers entries is currently ALLOWED for the owner.
-// Documented here so the suite tracks it rather than hides it.
-await check('KNOWN-GAP(P5): owner may store junk inside answer entries', 'allow', async () => {
-  const junkRef = await addDoc(collection(db, 'questions'), {
+// P5 hardening: per-element answer validation (unrolled indexed checks).
+await check('A cannot store junk inside answer entries', 'deny', () =>
+  addDoc(collection(db, 'questions'), {
     ...questionPayload,
     ownerId: aliceUid,
     possibleAnswers: [{ nested: { deep: 'junk' } }],
-  });
-  await deleteDoc(junkRef);
-});
+  }));
+await check('A cannot store an oversized answerMessage (>500 chars)', 'deny', () =>
+  addDoc(collection(db, 'questions'), {
+    ...questionPayload,
+    ownerId: aliceUid,
+    possibleAnswers: [{ answerMessage: 'x'.repeat(501), isCorrect: true }],
+  }));
+await check('A cannot store a non-boolean isCorrect', 'deny', () =>
+  addDoc(collection(db, 'questions'), {
+    ...questionPayload,
+    ownerId: aliceUid,
+    possibleAnswers: [{ answerMessage: 'Paris', isCorrect: 'yes' }],
+  }));
+await check('a junk entry hidden at position 2 is also rejected', 'deny', () =>
+  addDoc(collection(db, 'questions'), {
+    ...questionPayload,
+    ownerId: aliceUid,
+    possibleAnswers: [
+      { answerMessage: 'Paris', isCorrect: true },
+      { answerMessage: 'Lyon', isCorrect: false, leak: 1 },
+    ],
+  }));
 await signOut(auth);
 
 // --- Quizmaster B: cannot touch A's library --------------------------------

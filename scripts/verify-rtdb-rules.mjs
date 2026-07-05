@@ -123,6 +123,10 @@ await check('host cannot create a room with stray fields inside a tile', 'deny',
     ...roomDoc,
     board: { q1: { ...roomDoc.board.q1, answerKey: 0 } },
   }));
+await check('host cannot create a room with an unknown root key', 'deny', () =>
+  set(ref(host.rtdb, `rooms/${CODE}`), { ...roomDoc, secretStash: { q1: 0 } }));
+await check('host cannot create a room with junk inside teams', 'deny', () =>
+  set(ref(host.rtdb, `rooms/${CODE}`), { ...roomDoc, teams: { A: { name: 'Team 1', motto: 'x' }, B: { name: 'Team 2' } } }));
 await check('host creates a clean room', 'allow', () =>
   set(ref(host.rtdb, `rooms/${CODE}`), roomDoc));
 await check('rival host cannot overwrite the room (code collision → retry)', 'deny', () =>
