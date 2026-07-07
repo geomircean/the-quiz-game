@@ -1,34 +1,30 @@
 const hasContent = text => typeof text === 'string' && text && text.length > 0 && text.trim().length > 0;
 
-export const validateNewQuiz = ({ quizName, fullQuiz }) => {
-  // const isQuizNameValid = !quizName;
-  let isAllValid = !quizName;
-
-  const fullQuizValidation = [];
-
-  fullQuiz.forEach((question, questionIndex) => {
-    fullQuizValidation.push({ possibleAnswers: [] });
-    const { isValid, ...rest } = validateQuestion(question);
-    fullQuizValidation[questionIndex] = { ...rest };
-    if (!isValid) { isAllValid = false; }
-  });
-
+// The quiz builder references library questions by id — it only needs a
+// name and at least one picked question (teams/answer mode have defaults).
+// Bounds mirror firestore.rules so failures surface as friendly messages
+// instead of a raw permission error.
+export const validateQuizConfig = ({ quizName, questionIds }) => {
+  const quizNameMissing = !hasContent(quizName);
+  const quizNameTooLong = typeof quizName === 'string' && quizName.length > 120;
+  const noQuestions = !questionIds || questionIds.length === 0;
+  const tooManyQuestions = !!questionIds && questionIds.length > 50;
   return {
-    validations: {
-      isAllValid,
-      // isQuizNameValid,
-      fullQuizValidation,
-    }
+    quizNameMissing,
+    quizNameTooLong,
+    noQuestions,
+    tooManyQuestions,
+    isValid: !quizNameMissing && !quizNameTooLong && !noQuestions && !tooManyQuestions,
   };
-}
+};
 
 export const validateQuestion = (question) => {
-  const description = !hasContent(question.description);
-  const category = !hasContent(question.category);
+  const questionText = !hasContent(question.questionText);
+  const tileName = !hasContent(question.tileName);
   const hasNoCorrectAnswers = !question.possibleAnswers.find(({ isCorrect }) => isCorrect);
   let isValid = true;
 
-  if (hasNoCorrectAnswers || description || category) {
+  if (hasNoCorrectAnswers || questionText || tileName) {
     isValid = false;
   }
   const possibleAnswers = [];
@@ -38,5 +34,5 @@ export const validateQuestion = (question) => {
     if (!answerMessage) isValid = false;
   });
 
-  return { hasNoCorrectAnswers, possibleAnswers, description, category, isValid, };
+  return { hasNoCorrectAnswers, possibleAnswers, questionText, tileName, isValid, };
 }

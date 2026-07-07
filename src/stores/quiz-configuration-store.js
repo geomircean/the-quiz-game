@@ -1,35 +1,22 @@
 import { create } from 'zustand';
-import { produce } from 'immer';
-import { validateNewQuiz } from '@/app/validations';
-import { saveQuiz } from '@/services/manage-quiz-api';
-
 
 const answerStruct = { answerMessage: '', isCorrect: false };
 const questionStruct = {
-  description: '',
-  category: '',
+  questionText: '',
+  tileName: '',
   possibleAnswers: [],
 };
 
-export const useQuizConfigStore = create((set, get) => ({
-  quizId: '',
-  quizName: '',
+// Form state for the single-question editor (QuestionConfiguration).
+// Quiz assembly lives in the builder page itself — a quiz is just a name,
+// an answer mode and pointers to library questions (see src/data/quizzes.js).
+export const useQuizConfigStore = create((set) => ({
   fullQuiz: [],
-  validations: {
-    isAllValid: true,
-    isQuizNameValid: true,
-    fullQuizValidation: {},
-  },
-  setQuizName: ({ quizName }) => set({ quizName }),
-  addQuestion: () =>
-    set(state => {
-      const { fullQuiz } = state;
-      fullQuiz.push({ ...questionStruct, possibleAnswers: [{ ...answerStruct }] });
-      return { fullQuiz };
-    }),
-  setupSingleQuestion: () => set(state => {
+  setupSingleQuestion: () => set(() => {
     return { fullQuiz: [{ ...questionStruct, possibleAnswers: [{ ...answerStruct }] }] };
   }),
+  // Hydrate the single-question editor with an existing library question.
+  loadQuestion: (question) => set({ fullQuiz: [question] }),
   addAnswer: ({ questionIndex }) => set(state => {
     const { fullQuiz } = state;
     const { possibleAnswers } = fullQuiz[questionIndex];
@@ -48,52 +35,23 @@ export const useQuizConfigStore = create((set, get) => ({
     fullQuiz[questionIndex].possibleAnswers[answerIndex].answerMessage = value;
     return { fullQuiz };
   }),
-  updateIsCorrect: ({ questionIndex, answerIndex, value }) => set(state => {
+  updateIsCorrect: ({ questionIndex, answerIndex }) => set(state => {
     const { fullQuiz } = state;
     fullQuiz[questionIndex].possibleAnswers = fullQuiz[questionIndex]
       .possibleAnswers.map((answer, answerInd) => ({ ...answer, isCorrect: answerInd === answerIndex }));
 
     return { fullQuiz };
   }),
-  changeQuestionDescription: ({ questionIndex, value }) => set(state => {
+  changeQuestionText: ({ questionIndex, value }) => set(state => {
     const { fullQuiz } = state;
-    fullQuiz[questionIndex].description = value;
+    fullQuiz[questionIndex].questionText = value;
     return { fullQuiz };
   }),
-  changeQuestionCategory: ({ questionIndex, value }) => set(state => {
+  changeTileName: ({ questionIndex, value }) => set(state => {
     const { fullQuiz } = state;
-    fullQuiz[questionIndex].category = value;
+    fullQuiz[questionIndex].tileName = value;
 
     return { fullQuiz };
   }),
-  saveQuiz: async () => {
-    const fullQuiz = get().fullQuiz;
-    const { validations } = validateNewQuiz({ fullQuiz });
-    const { isAllValid } = validations;
-    console.log(fullQuiz);
-
-    if (!isAllValid) {
-      console.log('not valid', validations);
-      return set({ validations });
-    }
-
-    try {
-      const res = await saveQuiz(fullQuiz);
-      return set({ isAllValid, res, validations, fullQuiz: [] });
-    } catch (error) {
-      return set({ isAllValid: false, error: error.message, });
-    }
-  },
-  resetQuiz: () => set(state => ({
-    fullQuiz: [],
-    validations: {
-      isAllValid: true,
-      isQuizNameValid: true,
-      fullQuizValidation: {},
-    }
-  })),
-  saveQuestion: () => set(state => {
-    const fullQuizValidation = validateNewQuiz(state);
-    return { validations: { ...state.validations, fullQuizValidation, } };
-  }),
+  resetQuiz: () => set({ fullQuiz: [] }),
 }));

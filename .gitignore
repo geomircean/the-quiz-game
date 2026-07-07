@@ -28,6 +28,11 @@ yarn-error.log*
 # local env files
 .env*.local
 
+# firebase
+.firebase/
+*-debug.log
+.emulator-data/
+
 # vercel
 .vercel
 

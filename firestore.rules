@@ -1,0 +1,115 @@
+rules_version = '2';
+
+// Deny by default — the rules ARE the backend (no server).
+// P1: owner-only question library. P2 adds quizzes; P5 hardens further.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // The Quizmaster is a real (Google) account, never an anonymous guest.
+    function isQuizmaster() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'google.com';
+    }
+
+    // Rules have no loops, so per-element list validation is unrolled over
+    // the 8-answer cap. RESIDUAL (accepted): quizzes.questionIds elements
+    // stay untyped — unrolling 50 is impractical; the protection is that
+    // createRoom HARD-FAILS when any pointer is denied/missing, and the
+    // RTDB board rules validate everything a player can ever read.
+    // DEPLOY STEP: enable App Check on Firestore + RTDB in the console.
+    function isValidAnswer(answer) {
+      return answer is map
+        && answer.keys().hasOnly(['answerMessage', 'isCorrect'])
+        && answer.answerMessage is string
+        && answer.answerMessage.size() > 0
+        && answer.answerMessage.size() <= 500
+        && answer.isCorrect is bool;
+    }
+
+    function isValidAnswersList(answers) {
+      return answers is list
+        && answers.size() >= 1
+        && answers.size() <= 8
+        && isValidAnswer(answers[0])
+        && (answers.size() <= 1 || isValidAnswer(answers[1]))
+        && (answers.size() <= 2 || isValidAnswer(answers[2]))
+        && (answers.size() <= 3 || isValidAnswer(answers[3]))
+        && (answers.size() <= 4 || isValidAnswer(answers[4]))
+        && (answers.size() <= 5 || isValidAnswer(answers[5]))
+        && (answers.size() <= 6 || isValidAnswer(answers[6]))
+        && (answers.size() <= 7 || isValidAnswer(answers[7]));
+    }
+
+    function isValidQuestion(data) {
+      return data.questionText is string
+        && data.questionText.size() > 0
+        && data.questionText.size() <= 1000
+        && data.tileName is string
+        && data.tileName.size() > 0
+        && data.tileName.size() <= 120
+        && isValidAnswersList(data.possibleAnswers)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && data.keys().hasOnly(['ownerId', 'questionText', 'tileName', 'possibleAnswers', 'createdAt', 'updatedAt']);
+    }
+
+    // Private question library — only the owner can see or touch it.
+    match /questions/{questionId} {
+      allow read, delete: if isQuizmaster()
+        && request.auth.uid == resource.data.ownerId;
+      allow create: if isQuizmaster()
+        && request.resource.data.ownerId == request.auth.uid
+        && isValidQuestion(request.resource.data);
+      allow update: if isQuizmaster()
+        && request.auth.uid == resource.data.ownerId
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && isValidQuestion(request.resource.data);
+    }
+
+    function isValidQuiz(data) {
+      return data.name is string
+        && data.name.size() > 0
+        && data.name.size() <= 120
+        && data.answerMode in ['firstTap', 'majority']
+        && data.questionIds is list
+        && data.questionIds.size() >= 1
+        && data.questionIds.size() <= 50
+        && data.teams is map
+        && data.teams.keys().hasAll(['A', 'B'])
+        && data.teams.keys().hasOnly(['A', 'B'])
+        && data.teams.A is map
+        && data.teams.A.keys().hasOnly(['name'])
+        && data.teams.A.name is string
+        && data.teams.A.name.size() > 0
+        && data.teams.A.name.size() <= 40
+        && data.teams.B is map
+        && data.teams.B.keys().hasOnly(['name'])
+        && data.teams.B.name is string
+        && data.teams.B.name.size() > 0
+        && data.teams.B.name.size() <= 40
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && data.keys().hasOnly(['ownerId', 'name', 'answerMode', 'questionIds', 'teams', 'createdAt', 'updatedAt']);
+    }
+
+    // Saved quizzes — pointers into the owner's library, owner-only.
+    match /quizzes/{quizId} {
+      allow read, delete: if isQuizmaster()
+        && request.auth.uid == resource.data.ownerId;
+      allow create: if isQuizmaster()
+        && request.resource.data.ownerId == request.auth.uid
+        && isValidQuiz(request.resource.data);
+      allow update: if isQuizmaster()
+        && request.auth.uid == resource.data.ownerId
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && isValidQuiz(request.resource.data);
+    }
+
+    // Everything else is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

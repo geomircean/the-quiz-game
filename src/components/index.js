@@ -1,2 +1,2 @@
 export * from './base';
-export { default as Question } from './answer-item';
+export { default as AnswerItem } from './answer-item';
