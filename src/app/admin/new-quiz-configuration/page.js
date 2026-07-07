@@ -4,10 +4,13 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Checkbox, Input, Label, RadioGroup, RadioGroupItem } from '@/components';
 import Loading from '@/components/loading';
+import QuestionConfiguration from '@/components/question-configuration';
 import { ArrowUturnLeftIcon } from '@heroicons/react/20/solid';
 import { useAuth } from '@/context/auth-context';
 import { useQuestions } from '@/hooks/useQuestions';
-import { validateQuizConfig } from '@/app/validations';
+import { useQuizConfigStore } from '@/stores';
+import { validateQuestion, validateQuizConfig } from '@/app/validations';
+import { addQuestion } from '@/data/questions';
 import { addQuiz, editQuiz, getQuiz } from '@/data/quizzes';
 
 // A quiz is a name + answer mode + POINTERS into the question library.
@@ -27,6 +30,47 @@ const QuizBuilder = () => {
   const [saveError, setSaveError] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [isHydrating, setIsHydrating] = useState(!!id);
+
+  // Mix-and-match: author a brand-new question inline. It is saved to the
+  // LIBRARY (quizzes only ever point to library questions) and then
+  // auto-selected into this quiz.
+  const { fullQuiz, setupSingleQuestion, resetQuiz } = useQuizConfigStore();
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [newQuestionValidation, setNewQuestionValidation] = useState(null);
+  const [newQuestionError, setNewQuestionError] = useState(null);
+  const [isSavingNewQuestion, setIsSavingNewQuestion] = useState(false);
+
+  const openNewQuestion = () => {
+    setupSingleQuestion();
+    setNewQuestionValidation(null);
+    setNewQuestionError(null);
+    setIsAddingNew(true);
+  };
+
+  const cancelNewQuestion = () => {
+    resetQuiz();
+    setIsAddingNew(false);
+  };
+
+  const saveNewQuestion = async () => {
+    setNewQuestionError(null);
+    const draft = fullQuiz[0];
+    const { isValid, ...rest } = validateQuestion(draft);
+    if (!isValid) {
+      return setNewQuestionValidation(rest);
+    }
+    setNewQuestionValidation(null);
+    setIsSavingNewQuestion(true);
+    try {
+      const docRef = await addQuestion({ ownerId: user.uid, question: draft });
+      setSelectedIds((current) => [...current, docRef.id]);
+      resetQuiz();
+      setIsAddingNew(false);
+    } catch (error) {
+      setNewQuestionError(error.message);
+    }
+    setIsSavingNewQuestion(false);
+  };
 
   useEffect(() => {
     if (!id) return undefined;
@@ -110,7 +154,7 @@ const QuizBuilder = () => {
     <div className="flex flex-col justify-center gap-4 text-left">
       <div className="flex justify-between py-5">
         <Button onClick={() => router.push('/admin')}><ArrowUturnLeftIcon className="size-6"/></Button>
-        <Button onClick={save} disabled={isSaving}>{isSaving ? 'Saving…' : 'Save'}</Button>
+        <Button onClick={save} disabled={isSaving || isAddingNew}>{isSaving ? 'Saving…' : 'Save'}</Button>
       </div>
       <div className="mx-auto w-full max-w-3xl flex flex-col gap-6">
         <h1 className="text-2xl text-center">{id ? 'Edit quiz' : 'Create new quiz'}</h1>
@@ -182,6 +226,31 @@ const QuizBuilder = () => {
               </label>
             ))}
           </div>
+
+          {!isAddingNew && (
+            <Button variant="outline" className="self-start" onClick={openNewQuestion}>
+              + Write a new question
+            </Button>
+          )}
+          {isAddingNew && (
+            <div className="rounded-md border border-purple-500 bg-purple-900/30 p-4 flex flex-col gap-2">
+              <h3 className="font-semibold">New question</h3>
+              <p className="text-sm italic opacity-80">
+                It gets saved to your library and added to this quiz — finish or
+                cancel it before saving the quiz.
+              </p>
+              {newQuestionError && <div className="error-message">Could not save: {newQuestionError}</div>}
+              <QuestionConfiguration questionIndex={0} validation={newQuestionValidation}/>
+              <div className="flex gap-2">
+                <Button onClick={saveNewQuestion} disabled={isSavingNewQuestion}>
+                  {isSavingNewQuestion ? 'Saving…' : 'Save & add to quiz'}
+                </Button>
+                <Button variant="outline" onClick={cancelNewQuestion} disabled={isSavingNewQuestion}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
