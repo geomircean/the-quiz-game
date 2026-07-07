@@ -7,6 +7,7 @@ import Loading from '@/components/loading';
 import { PencilIcon, TrashIcon } from '@heroicons/react/20/solid';
 import { useQuizzes } from '@/hooks/useQuizzes';
 import { useLaunchQuiz } from '@/hooks/useLaunchQuiz';
+import { useToast } from '@/context/toast-context';
 import { deleteQuiz } from '@/data/quizzes';
 
 const BASE_URL = '/admin';
@@ -27,6 +28,7 @@ const AdminLanding = () => {
     setDeleteError(null);
     try {
       await deleteQuiz(id);
+      showToast('Quiz deleted');
     } catch (err) {
       setDeleteError(err.message);
     }

@@ -20,6 +20,7 @@ import Loading from '@/components/loading';
 import QuestionConfiguration from '@/components/question-configuration';
 import { ArrowUturnLeftIcon, PencilIcon } from '@heroicons/react/20/solid';
 import { useAuth } from '@/context/auth-context';
+import { useToast } from '@/context/toast-context';
 import { useQuestions } from '@/hooks/useQuestions';
 import { useQuizConfigStore } from '@/stores';
 import { validateQuestion, validateQuizConfig } from '@/app/validations';
@@ -36,6 +37,7 @@ const QuizBuilder = () => {
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
   const { questions, isLoading: libraryLoading } = useQuestions();
+  const { showToast } = useToast();
 
   const [name, setName] = useState('');
   const [answerMode, setAnswerMode] = useState('firstTap');
@@ -172,6 +174,7 @@ const QuizBuilder = () => {
       } else {
         await addQuiz({ ownerId: user.uid, quiz });
       }
+      showToast(id ? 'Quiz updated' : 'Quiz saved');
       router.push('/admin');
     } catch (error) {
       if (savedDraftIds.length > 0) {

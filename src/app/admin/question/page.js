@@ -8,6 +8,7 @@ import QuestionConfiguration from '@/components/question-configuration';
 import { ArrowUturnLeftIcon } from '@heroicons/react/20/solid';
 import { useQuizConfigStore } from '@/stores';
 import { useAuth } from '@/context/auth-context';
+import { useToast } from '@/context/toast-context';
 import { validateQuestion } from '@/app/validations';
 import { addQuestion, editQuestion, getQuestion } from '@/data/questions';
 
@@ -18,6 +19,7 @@ const QuestionEditor = () => {
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
   const { fullQuiz, setupSingleQuestion, loadQuestion, resetQuiz } = useQuizConfigStore();
+  const { showToast } = useToast();
   const [validation, setValidation] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
@@ -38,6 +40,7 @@ const QuestionEditor = () => {
       } else {
         await addQuestion({ ownerId: user.uid, question });
       }
+      showToast(id ? 'Question updated' : 'Question saved');
       router.push('/admin/questions-list');
     } catch (error) {
       setSaveError(error.message);
