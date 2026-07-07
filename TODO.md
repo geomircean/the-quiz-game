@@ -10,7 +10,9 @@ File pointers are best-guess starting points, not gospel.
       clickable. (`src/app/host/room/page.js`)
 - [ ] **Clearer turn messaging.** More suggestive "it's your turn / their turn"
       cues while a team is up (host + player views).
-- [ ] **Delete (trashcan) icon has no contrast.** Hard to see — fix the colour.
+- [x] **Delete (trashcan) icon has no contrast.** Hard to see — fix the colour.
+      *(Done: real Delete buttons use the destructive variant — solid red, light
+      text; the per-answer trash icon brightened to red-400 with a red hover.)*
       (`src/app/admin/questions-list/page.js`, `src/app/admin/page.js`)
 - [ ] **Answers have the wrong background.** Fix the answer background colour.
       (`src/components/answer-item.js`)

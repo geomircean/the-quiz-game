@@ -84,11 +84,13 @@ const QuestionConfiguration = ({ questionIndex, validation }) => {
                           />
                         </label>
                         <Button
-                          variant="ghost"
+                          variant="destructive"
+                          size="icon"
+                          className="shrink-0"
                           aria-label={`Delete answer ${index + 1}`}
                           onClick={() => deleteAnswer({ questionIndex, answerIndex: index })}
                         >
-                          <TrashIcon className="size-8 p-1.5 text-red-600"/>
+                          <TrashIcon className="size-5"/>
                         </Button>
                       </div>
                       {validation && validation.possibleAnswers[index] &&
