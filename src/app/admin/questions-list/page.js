@@ -9,14 +9,17 @@ import { useQuestions } from '@/hooks/useQuestions';
 import { deleteQuestion } from '@/data/questions';
 import { quizzesUsingQuestion } from '@/data/quizzes';
 import { useAuth } from '@/context/auth-context';
+import { useToast } from '@/context/toast-context';
 
 const QuestionsList = () => {
   const router = useRouter();
   const { user } = useAuth();
   const { questions, error, isLoading } = useQuestions();
+  const { showToast } = useToast();
   const [deleteError, setDeleteError] = useState(null);
 
-  const onDelete = async (id) => {
+  const onDelete = async (id, tileName) => {
+    if (!window.confirm(`Delete "${tileName}"? This cannot be undone.`)) return;
     setDeleteError(null);
     try {
       // Delete-guard: a question cannot be deleted while any quiz uses it —
@@ -29,6 +32,7 @@ const QuestionsList = () => {
         );
       }
       await deleteQuestion(id);
+      showToast('Question deleted');
     } catch (err) {
       setDeleteError(err.message);
     }
@@ -60,7 +64,7 @@ const QuestionsList = () => {
                 <Button size="sm" onClick={() => router.push(`/admin/question/?id=${id}`)}>
                   <PencilIcon className="size-4 mr-1"/> Edit
                 </Button>
-                <Button size="sm" variant="destructive" onClick={() => onDelete(id)}>
+                <Button size="sm" variant="destructive" onClick={() => onDelete(id, tileName)}>
                   <TrashIcon className="size-4 mr-1"/> Delete
                 </Button>
               </div>

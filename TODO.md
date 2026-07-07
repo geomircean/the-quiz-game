@@ -70,7 +70,7 @@ folded into the lists above and not repeated here.
 
 ### Build (admin)
 
-- [ ] **Question delete has no confirmation.** Quizzes get a `window.confirm`;
+- [x] **Question delete has no confirmation.** Quizzes get a `window.confirm`;
       deleting a question is immediate and irreversible. Add a confirm.
       (`src/app/admin/questions-list/page.js`)
 - [ ] **Correct-answer control is an unlabeled star.** A star icon hiding a radio,
@@ -116,11 +116,12 @@ folded into the lists above and not repeated here.
 
 ### Polish
 
-- [ ] **Tab title is wrong.** Metadata says "Raul's Random Quiz Questions" — should
+- [x] **Tab title is wrong.** Metadata says "Raul's Random Quiz Questions" — should
       be "Team Quiz Show". (`src/app/layout.js`)
-- [ ] **No save confirmation.** Saving a question/quiz just navigates away with no
-      "Saved" feedback; add a toast. (`src/app/admin/question/page.js`,
-      `src/app/admin/new-quiz-configuration/page.js`)
+- [x] **No save confirmation.** Saving a question/quiz just navigates away with no
+      "Saved" feedback; add a toast. *(Done: minimal app-wide ToastProvider —
+      save/update/delete confirmations for questions and quizzes, auto-dismissing,
+      survives the post-save navigation.)* (`src/context/toast-context.js`)
 
 ## Functional
 
