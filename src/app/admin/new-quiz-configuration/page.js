@@ -18,7 +18,7 @@ import {
 } from '@/components';
 import Loading from '@/components/loading';
 import QuestionConfiguration from '@/components/question-configuration';
-import { ArrowUturnLeftIcon } from '@heroicons/react/20/solid';
+import { ArrowUturnLeftIcon, PencilIcon } from '@heroicons/react/20/solid';
 import { useAuth } from '@/context/auth-context';
 import { useQuestions } from '@/hooks/useQuestions';
 import { useQuizConfigStore } from '@/stores';
@@ -51,46 +51,55 @@ const QuizBuilder = () => {
   const [search, setSearch] = useState('');
   const [hideAdded, setHideAdded] = useState(false);
 
-  // Mix-and-match: author a brand-new question inline. It is saved to the
-  // LIBRARY (quizzes only ever point to library questions) and then
-  // auto-selected into this quiz.
-  const { fullQuiz, setupSingleQuestion, resetQuiz } = useQuizConfigStore();
+  // Mix-and-match: brand-new questions are held as LOCAL DRAFTS and only
+  // written to the library when the quiz itself is saved — abandoning the
+  // builder leaves no strays behind. Drafts are editable and removable
+  // until then.
+  const { fullQuiz, setupSingleQuestion, loadQuestion, resetQuiz } = useQuizConfigStore();
+  const [draftQuestions, setDraftQuestions] = useState([]);
   const [isAddingNew, setIsAddingNew] = useState(false);
+  const [editingDraftId, setEditingDraftId] = useState(null);
   const [newQuestionValidation, setNewQuestionValidation] = useState(null);
-  const [newQuestionError, setNewQuestionError] = useState(null);
-  const [isSavingNewQuestion, setIsSavingNewQuestion] = useState(false);
 
   const openNewQuestion = () => {
     setupSingleQuestion();
+    setEditingDraftId(null);
     setNewQuestionValidation(null);
-    setNewQuestionError(null);
     setIsAddingNew(true);
   };
 
-  const cancelNewQuestion = () => {
-    resetQuiz();
-    setIsAddingNew(false);
+  const openEditDraft = (draft) => {
+    // Clone: the store mutates its question in place, and Cancel must not
+    // have touched the stored draft.
+    loadQuestion(structuredClone(draft));
+    setEditingDraftId(draft.localId);
+    setNewQuestionValidation(null);
+    setIsAddingNew(true);
   };
 
-  const saveNewQuestion = async () => {
-    setNewQuestionError(null);
+  const closeQuestionPanel = () => {
+    resetQuiz();
+    setIsAddingNew(false);
+    setEditingDraftId(null);
+  };
+
+  const addDraftToQuiz = () => {
     const draft = fullQuiz[0];
     const { isValid, ...rest } = validateQuestion(draft);
     if (!isValid) {
       return setNewQuestionValidation(rest);
     }
-    setNewQuestionValidation(null);
-    setIsSavingNewQuestion(true);
-    try {
-      const docRef = await addQuestion({ ownerId: user.uid, question: draft });
-      setSelectedIds((current) => [...current, docRef.id]);
-      resetQuiz();
-      setIsAddingNew(false);
-    } catch (error) {
-      setNewQuestionError(error.message);
-    }
-    setIsSavingNewQuestion(false);
+    const { questionText, tileName, possibleAnswers } = structuredClone(draft);
+    setDraftQuestions((current) => editingDraftId
+      ? current.map((d) => d.localId === editingDraftId
+        ? { ...d, questionText, tileName, possibleAnswers }
+        : d)
+      : [...current, { localId: crypto.randomUUID(), questionText, tileName, possibleAnswers }]);
+    closeQuestionPanel();
   };
+
+  const removeDraft = (localId) =>
+    setDraftQuestions((current) => current.filter((d) => d.localId !== localId));
 
   useEffect(() => {
     if (!id) return undefined;
@@ -131,17 +140,33 @@ const QuizBuilder = () => {
 
   const save = async () => {
     setSaveError(null);
-    const questionIds = libraryReady
+    const libraryQuestionIds = libraryReady
       ? selectedIds.filter((qid) => questionsById.has(qid))
       : selectedIds;
-    const result = validateQuizConfig({ quizName: name, questionIds });
+    // Drafts count toward the quiz size for validation purposes.
+    const result = validateQuizConfig({
+      quizName: name,
+      questionIds: [...libraryQuestionIds, ...draftQuestions.map((d) => d.localId)],
+    });
     if (!result.isValid) {
       return setValidation(result);
     }
     setValidation(null);
     setIsSaving(true);
+
+    // Drafts are persisted to the library NOW (quizzes only ever point to
+    // library questions), then the quiz references them. If something fails
+    // midway, the already-saved drafts are moved into selectedIds so a
+    // retry cannot create duplicates.
+    const savedDraftIds = [];
+    const remainingDrafts = [...draftQuestions];
     try {
-      const quiz = { name, answerMode, questionIds };
+      for (const draft of draftQuestions) {
+        const docRef = await addQuestion({ ownerId: user.uid, question: draft });
+        savedDraftIds.push(docRef.id);
+        remainingDrafts.shift();
+      }
+      const quiz = { name, answerMode, questionIds: [...libraryQuestionIds, ...savedDraftIds] };
       if (id) {
         await editQuiz({ id, quiz });
       } else {
@@ -149,6 +174,10 @@ const QuizBuilder = () => {
       }
       router.push('/admin');
     } catch (error) {
+      if (savedDraftIds.length > 0) {
+        setSelectedIds((current) => [...current, ...savedDraftIds]);
+        setDraftQuestions(remainingDrafts);
+      }
       setSaveError(error.message);
       setIsSaving(false);
     }
@@ -168,7 +197,8 @@ const QuizBuilder = () => {
   }
 
   const liveSelectedCount = selectedIds.length - orphanedIds.length;
-  const oddTileCount = liveSelectedCount > 0 && liveSelectedCount % 2 === 1;
+  const totalCount = liveSelectedCount + draftQuestions.length;
+  const oddTileCount = totalCount > 0 && totalCount % 2 === 1;
 
   const normalizedSearch = search.trim().toLowerCase();
   const filteredQuestions = (questions ?? []).filter((q) => {
@@ -219,7 +249,7 @@ const QuizBuilder = () => {
         </div>
 
         <div className="flex flex-col gap-2">
-          <span>Questions in this quiz ({liveSelectedCount})</span>
+          <span>Questions in this quiz ({totalCount})</span>
           {orphanedIds.length > 0 && (
             <p className="text-sm italic text-amber-300">
               {orphanedIds.length} previously selected question{orphanedIds.length > 1 ? 's were' : ' was'} deleted
@@ -237,7 +267,7 @@ const QuizBuilder = () => {
           )}
           {validation?.noQuestions && <div className="error-message">Pick at least one question.</div>}
 
-          {selectedIds.length === 0 && (
+          {totalCount === 0 && selectedIds.length === 0 && (
             <p className="text-sm italic opacity-80">No questions yet — add some below.</p>
           )}
           <div className="flex flex-col gap-2">
@@ -263,7 +293,27 @@ const QuizBuilder = () => {
                 </div>
               );
             })}
+            {draftQuestions.map((draft) => (
+              <div key={draft.localId} className="flex items-center gap-3 rounded-md border border-dashed border-amber-400/70 bg-purple-900/30 p-3">
+                <div className="grow min-w-0">
+                  <span className="mr-2 rounded bg-amber-400/20 px-1.5 py-0.5 text-xs text-amber-300">new</span>
+                  <span className="font-semibold">{draft.tileName}</span>{' '}
+                  <span className="text-sm opacity-80">{draft.questionText}</span>
+                </div>
+                <Button size="sm" variant="outline" aria-label="Edit new question" disabled={isAddingNew} onClick={() => openEditDraft(draft)}>
+                  <PencilIcon className="size-4"/>
+                </Button>
+                <Button size="sm" variant="outline" aria-label="Remove new question" onClick={() => removeDraft(draft.localId)}>
+                  <X className="size-4"/>
+                </Button>
+              </div>
+            ))}
           </div>
+          {draftQuestions.length > 0 && (
+            <p className="text-xs italic opacity-80">
+              “new” questions are saved to your library together with the quiz.
+            </p>
+          )}
 
           <div className="flex flex-wrap gap-2 pt-1">
             <Button onClick={() => setIsLibraryOpen(true)} disabled={isAddingNew}>
@@ -278,18 +328,16 @@ const QuizBuilder = () => {
 
           {isAddingNew && (
             <div className="rounded-md border border-purple-500 bg-purple-900/30 p-4 flex flex-col gap-2">
-              <h3 className="font-semibold">New question</h3>
+              <h3 className="font-semibold">{editingDraftId ? 'Edit new question' : 'New question'}</h3>
               <p className="text-sm italic opacity-80">
-                It gets saved to your library and added to this quiz — finish or
-                cancel it before saving the quiz.
+                Added to this quiz now — written to your library when the quiz is saved.
               </p>
-              {newQuestionError && <div className="error-message">Could not save: {newQuestionError}</div>}
               <QuestionConfiguration questionIndex={0} validation={newQuestionValidation}/>
               <div className="flex gap-2">
-                <Button onClick={saveNewQuestion} disabled={isSavingNewQuestion}>
-                  {isSavingNewQuestion ? 'Saving…' : 'Save & add to quiz'}
+                <Button onClick={addDraftToQuiz}>
+                  {editingDraftId ? 'Update question' : 'Add to quiz'}
                 </Button>
-                <Button variant="outline" onClick={cancelNewQuestion} disabled={isSavingNewQuestion}>
+                <Button variant="outline" onClick={closeQuestionPanel}>
                   Cancel
                 </Button>
               </div>
@@ -334,7 +382,7 @@ const QuizBuilder = () => {
             ))}
           </div>
           <div className="flex items-center justify-between border-t border-purple-700 pt-3">
-            <span className="text-sm">{liveSelectedCount} in quiz</span>
+            <span className="text-sm">{totalCount} in quiz</span>
             <SheetClose asChild>
               <Button>Done</Button>
             </SheetClose>
