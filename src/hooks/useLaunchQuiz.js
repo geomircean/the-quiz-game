@@ -24,7 +24,8 @@ export const useLaunchQuiz = () => {
     setIsLaunching(true);
     try {
       const { code } = await createRoom({ hostId: user.uid, quiz, questions });
-      router.push(`/host/room/?room=${code}`);
+      // Land on the command center; the big screen opens from there.
+      router.push(`/host/control/?room=${code}`);
     } catch (error) {
       setLaunchError(error.message);
       setIsLaunching(false);

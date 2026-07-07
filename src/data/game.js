@@ -62,6 +62,26 @@ export const revealTile = ({ code, room, tileId, correctIndex }) => {
   return updateRoom(code, changes);
 };
 
+// Skip the open question: the tile is used up with no points awarded and
+// the turn passes — same transition as nextTurn, named for intent.
+export const skipTile = ({ code, room, tileId }) => nextTurn({ code, room, tileId });
+
+// Manual score correction (judgment calls, disputes). Clamped at zero.
+export const adjustScore = ({ code, room, team, delta }) =>
+  updateRoom(code, { [`scores/${team}`]: Math.max(0, (room.scores?.[team] ?? 0) + delta) });
+
+// End the game NOW with the current scores deciding the winner.
+export const endGameEarly = ({ code, room }) => {
+  const a = room.scores?.A ?? 0;
+  const b = room.scores?.B ?? 0;
+  return updateRoom(code, {
+    status: 'ended',
+    activeTileId: null,
+    revealed: false,
+    winner: a === b ? 'tie' : a > b ? 'A' : 'B',
+  });
+};
+
 // Tile used up, turn passes; when every tile is used the game ends and the
 // higher score wins (equal scores are a tie — no tiebreaker, by design).
 export const nextTurn = ({ code, room, tileId }) => {

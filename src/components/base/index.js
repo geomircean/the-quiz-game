@@ -4,3 +4,4 @@ export { Input } from './input';
 export { Label } from './label';
 export { Checkbox } from './checkbox';
 export { RadioGroup, RadioGroupItem } from './radio-group';
+export { Sheet, SheetTrigger, SheetClose, SheetContent, SheetTitle, SheetDescription } from './sheet';

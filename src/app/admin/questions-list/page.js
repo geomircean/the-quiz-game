@@ -60,8 +60,8 @@ const QuestionsList = () => {
                 <Button size="sm" onClick={() => router.push(`/admin/question/?id=${id}`)}>
                   <PencilIcon className="size-4 mr-1"/> Edit
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => onDelete(id)}>
-                  <TrashIcon className="size-4 mr-1 text-red-400"/> Delete
+                <Button size="sm" variant="destructive" onClick={() => onDelete(id)}>
+                  <TrashIcon className="size-4 mr-1"/> Delete
                 </Button>
               </div>
             </CardContent>

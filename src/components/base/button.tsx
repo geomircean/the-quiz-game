@@ -10,8 +10,11 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-        destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-        outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+        // Soft danger: a saturated red block vibrates against the purple
+        // backdrop — a translucent wash + bright red text reads as clearly
+        // destructive without the glare.
+        destructive: 'border border-red-500/40 bg-red-500/15 text-red-300 hover:bg-red-500/30',
+        outline: 'border border-purple-400/60 bg-transparent hover:bg-purple-800/40',
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
         link: 'text-primary underline-offset-4 hover:underline',

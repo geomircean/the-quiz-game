@@ -193,6 +193,25 @@ await check('playing: fresh player cannot join mid-game', 'deny', () =>
   set(ref(outsider.rtdb, `rooms/${CODE}/players/${outsiderUser.user.uid}`), { name: 'Late', team: 'A', connected: true }));
 await check('playing: presence updates still allowed', 'allow', () =>
   set(ref(player.rtdb, `rooms/${CODE}/players/${playerUid}/connected`), true));
+// Command-center powers: the HOST may modify or remove EXISTING players
+// (move team / kick) at any time — but can never create one.
+await check('host moves a player to the other team', 'allow', () =>
+  set(ref(host.rtdb, `rooms/${CODE}/players/${playerUid}/team`), 'B'));
+await check('host moves the player back', 'allow', () =>
+  set(ref(host.rtdb, `rooms/${CODE}/players/${playerUid}/team`), 'A'));
+await check('host cannot CREATE a phantom player', 'deny', () =>
+  set(ref(host.rtdb, `rooms/${CODE}/players/phantom-uid`), { name: 'Ghost', team: 'A', connected: true }));
+await check('rival host cannot move players in a foreign room', 'deny', () =>
+  set(ref(rivalHost.rtdb, `rooms/${CODE}/players/${playerUid}/team`), 'B'));
+await check('host kicks a player (delete node)', 'allow', () =>
+  set(ref(host.rtdb, `rooms/${CODE}/players/${playerUid}`), null));
+await check('kicked player cannot rejoin mid-game (joins stay lobby-only)', 'deny', () =>
+  set(ref(player.rtdb, `rooms/${CODE}/players/${playerUid}`), { name: 'Ana', team: 'A', connected: true }));
+// Restore the membership the later tap checks depend on: back to the lobby,
+// rejoin as the player, then resume the game in the exact pre-kick state.
+await set(ref(host.rtdb, `rooms/${CODE}/status`), 'lobby');
+await set(ref(player.rtdb, `rooms/${CODE}/players/${playerUid}`), { name: 'Ana', team: 'A', connected: true });
+await update(ref(host.rtdb, `rooms/${CODE}`), { status: 'playing', currentTurn: 'A', activeTileId: 'q1', revealed: false });
 
 // --- The answer must be unwritable in EVERY probed shape --------------------
 await check('host cannot inject isCorrect at the leaf path', 'deny', () =>
