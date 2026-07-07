@@ -141,14 +141,21 @@ folded into the lists above and not repeated here.
       and only written to the library when the quiz itself is saved, so an
       abandoned builder leaves no strays.)*
       (`src/app/admin/new-quiz-configuration/page.js`)
-- [ ] **QM command center.** Move the reveal / control buttons OFF the shared big
+- [x] **QM command center.** Move the reveal / control buttons OFF the shared big
       screen onto a separate host-only control surface; leave room for more host
-      tools later. (details TBD)
+      tools later. *(Done: /host/control drives the game — flow controls, private
+      answer preview, tap status with names, score ±, skip question, end early,
+      player move/kick — while /host/room is a pure display with zero controls;
+      Launch lands on the control with an "Open big screen" button.)*
+      (`src/app/host/control/page.js`, `src/app/host/room/page.js`)
 - [ ] **Generate random quiz** — finish the disabled button (pull N random library
       questions, optionally by tag). (`src/app/admin/page.js`)
 - [ ] **QM manages players** — move a player between teams, kick + let them rejoin,
       a "my team" screen, and a "leave team" button (incl. letting a player switch
-      team themselves while still in the lobby).
+      team themselves while still in the lobby). *(Partially done via the command
+      center: host can move/kick any player, mid-game joins stay blocked by design —
+      kicked players rejoin only before a game starts. Remaining: player-side "my
+      team"/"leave team" UI and lobby self-switching.)*
 - [x] **QR-code join** — instead of typing the room code. Also a copy / shareable
       `/play?room=CODE` join link.
 - [ ] **Play again** — same room, same players (note: others can still join too).

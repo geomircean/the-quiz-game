@@ -122,3 +122,11 @@ export const watchPresence = (code, uid) => {
 
 // Host-only control writes (P4 grows these into the full game loop).
 export const updateRoom = (code, changes) => update(ref(rtdb, `rooms/${code}`), changes);
+
+// Command-center player management — rules allow the host to modify or
+// remove EXISTING players only (nobody can create a phantom membership).
+export const movePlayer = ({ code, uid, team }) =>
+  set(ref(rtdb, `rooms/${code}/players/${uid}/team`), team);
+
+export const kickPlayer = ({ code, uid }) =>
+  set(ref(rtdb, `rooms/${code}/players/${uid}`), null);

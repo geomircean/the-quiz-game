@@ -70,7 +70,7 @@
         },
         "players": {
           "$uid": {
-            ".write": "auth != null && auth.uid === $uid && data.parent().parent().child('hostId').exists() && (root.child('rooms').child($code).child('status').val() === 'lobby' || (data.exists() && newData.child('team').val() === data.child('team').val() && newData.child('name').val() === data.child('name').val()))",
+            ".write": "auth != null && ((auth.uid === $uid && data.parent().parent().child('hostId').exists() && (root.child('rooms').child($code).child('status').val() === 'lobby' || (data.exists() && newData.child('team').val() === data.child('team').val() && newData.child('name').val() === data.child('name').val()))) || (root.child('rooms').child($code).child('hostId').val() === auth.uid && data.exists()))",
             ".validate": "newData.hasChildren(['name', 'team', 'connected'])",
             "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40" },
             "team": { ".validate": "newData.val() === 'A' || newData.val() === 'B'" },

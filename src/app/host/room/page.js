@@ -1,15 +1,13 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components';
 import Loading from '@/components/loading';
 import { useAuth } from '@/context/auth-context';
 import { useRoom } from '@/hooks/useRoom';
-import { useAnswerKey } from '@/hooks/useAnswerKey';
 import { normalizeRoomCode } from '@/data/rooms';
-import { nextTurn, pickTile, revealTile, startGame } from '@/data/game';
 import { getAlpha } from '@/utils';
 
 const TeamRoster = ({ label, players }) => (
@@ -27,40 +25,8 @@ const TeamRoster = ({ label, players }) => (
   </div>
 );
 
-// QR + copyable link for joining the room — shown on the shared screen so
-// phones can scan instead of typing the code.
-const JoinInvite = ({ joinUrl }) => {
-  const [copyState, setCopyState] = useState('idle');
-
-  if (!joinUrl) return null;
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(joinUrl);
-      setCopyState('copied');
-    } catch {
-      // Clipboard can be unavailable (permissions, non-HTTPS) — the link is
-      // visible right above the button, so just say so.
-      setCopyState('failed');
-    }
-    setTimeout(() => setCopyState('idle'), 2000);
-  };
-
-  return (
-    <div className="flex flex-col items-center gap-3">
-      <div className="rounded-xl bg-white p-3">
-        <QRCodeSVG value={joinUrl} size={180} marginSize={1} title={`Join the room at ${joinUrl}`}/>
-      </div>
-      <p className="text-sm break-all">{joinUrl}</p>
-      <Button size="sm" variant="outline" onClick={copy}>
-        {copyState === 'copied' ? 'Copied!' : copyState === 'failed' ? 'Copy the link above manually' : 'Copy join link'}
-      </Button>
-    </div>
-  );
-};
-
 const ScoreBar = ({ room }) => (
-  <div className="flex justify-center gap-8 text-xl">
+  <div className="flex justify-center gap-8 text-2xl">
     <span className={room.currentTurn === 'A' && room.status === 'playing' ? 'font-bold underline' : ''}>
       {room.teams?.A?.name ?? 'Team 1'}: {room.scores?.A ?? 0}
     </span>
@@ -70,23 +36,37 @@ const ScoreBar = ({ room }) => (
   </div>
 );
 
-// The QM's live room view: lobby → board of tiles → question + reveal →
-// pass the turn → ended. All control writes are host-gated by the rules.
+// QR + copyable link for joining the room — shown on the shared screen so
+// phones can scan instead of typing the code.
+const JoinInvite = ({ joinUrl }) => {
+  if (!joinUrl) return null;
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <div className="rounded-xl bg-white p-3">
+        <QRCodeSVG value={joinUrl} size={180} marginSize={1} title={`Join the room at ${joinUrl}`}/>
+      </div>
+      <p className="text-sm break-all">{joinUrl}</p>
+    </div>
+  );
+};
+
+// The SHARED BIG SCREEN — a pure display with zero controls. The QM drives
+// the game from /host/control in another window; this view is safe to
+// screen-share by construction (it never receives the answer key).
 const HostRoomInner = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const code = normalizeRoomCode(searchParams.get('room'));
   const { user, isLoading: authLoading } = useAuth();
   const { room, error, isLoading } = useRoom(code);
-  const answerKey = useAnswerKey(code);
-  const [actionError, setActionError] = useState(null);
+
   // Derived from window at runtime — the static build has no origin.
   const joinUrl = typeof window === 'undefined' || !code
     ? null
     : `${window.location.origin}/play/?room=${code}`;
 
   // Rooms are member-readable — a joined player opening the host URL gets
-  // sent to their own view instead of the host controls.
+  // sent to their own view instead.
   const isMemberNotHost = !!(room && user && room.hostId !== user.uid);
   useEffect(() => {
     if (isMemberNotHost) router.replace(`/play/?room=${code}`);
@@ -108,14 +88,6 @@ const HostRoomInner = () => {
   const teamA = players.filter((p) => p.team === 'A');
   const teamB = players.filter((p) => p.team === 'B');
   const tiles = Object.entries(room.board ?? {});
-  const act = (fn) => async () => {
-    setActionError(null);
-    try {
-      await fn();
-    } catch (err) {
-      setActionError(err.message);
-    }
-  };
 
   // --- Lobby ---------------------------------------------------------------
   if (room.status === 'lobby') {
@@ -123,7 +95,7 @@ const HostRoomInner = () => {
       <div className="mx-auto max-w-3xl flex flex-col gap-6">
         <Card className="bg-purple-800/40 text-purple-100 text-center">
           <CardHeader>
-            <CardTitle>{room.quizName}</CardTitle>
+            <CardTitle className="text-3xl">{room.quizName}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div>
@@ -141,21 +113,9 @@ const HostRoomInner = () => {
             <TeamRoster label={room.teams?.B?.name ?? 'Team 2'} players={teamB}/>
           </CardContent>
         </Card>
-        {actionError && <div className="error-message text-center">{actionError}</div>}
-        <div className="flex flex-col items-center">
-          <Button
-            size="lg"
-            disabled={teamA.length === 0 || teamB.length === 0}
-            onClick={act(() => startGame(code))}
-          >
-            Start game
-          </Button>
-          {(teamA.length === 0 || teamB.length === 0) && (
-            <span className="text-xs italic opacity-70">
-              waiting for at least one player on each team — teams can&apos;t change once the game starts
-            </span>
-          )}
-        </div>
+        <p className="text-center text-sm italic opacity-70">
+          The host starts the game from the command center.
+        </p>
       </div>
     );
   }
@@ -167,7 +127,7 @@ const HostRoomInner = () => {
       : `${room.teams?.[room.winner]?.name ?? room.winner} wins!`;
     return (
       <div className="mx-auto max-w-3xl flex flex-col gap-6 text-center">
-        <h1 className="text-5xl font-bold">{winnerLabel}</h1>
+        <h1 className="text-6xl font-bold">{winnerLabel}</h1>
         <ScoreBar room={room}/>
       </div>
     );
@@ -175,12 +135,15 @@ const HostRoomInner = () => {
 
   // --- Playing: active question -------------------------------------------
   const activeTileId = room.activeTileId;
+  const roomCodeCorner = (
+    <p className="text-center text-sm opacity-70">room code: {code} · join at {joinUrl?.replace(/^https?:\/\//, '').replace(/\/play.*$/, '')}</p>
+  );
+
   if (activeTileId && room.board?.[activeTileId]) {
     const tile = room.board[activeTileId];
     const reveal = room.reveals?.[activeTileId];
     const teamTaps = Object.entries(room.taps?.[activeTileId] ?? {})
       .filter(([uid]) => room.players?.[uid]?.team === room.currentTurn);
-    const correctIndex = answerKey?.[activeTileId];
     const turnTeamName = room.teams?.[room.currentTurn]?.name ?? room.currentTurn;
 
     return (
@@ -188,8 +151,8 @@ const HostRoomInner = () => {
         <ScoreBar room={room}/>
         <Card className="bg-purple-800/40 text-purple-100">
           <CardHeader>
-            <em>{tile.tileName}</em>
-            <CardTitle className="text-3xl">{tile.questionText}</CardTitle>
+            <em className="text-xl">{tile.tileName}</em>
+            <CardTitle className="text-4xl">{tile.questionText}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             {(tile.possibleAnswers ?? []).map(({ answerMessage }, index) => {
@@ -198,7 +161,7 @@ const HostRoomInner = () => {
               return (
                 <div
                   key={index}
-                  className={`rounded-md border p-4 text-lg ${
+                  className={`rounded-md border p-4 text-2xl ${
                     revealedCorrect ? 'bg-green-700 border-green-400'
                     : revealedWrongPick ? 'bg-red-800 border-red-400'
                     : 'border-purple-500'
@@ -209,42 +172,23 @@ const HostRoomInner = () => {
                 </div>
               );
             })}
+            {!room.revealed && (
+              <p className="text-center text-lg italic">
+                {turnTeamName} is answering — {teamTaps.length} tap{teamTaps.length === 1 ? '' : 's'} so far
+              </p>
+            )}
+            {room.revealed && reveal && (
+              <p className="text-center text-2xl">
+                {reveal.wasCorrect
+                  ? `Correct! +1 for ${room.teams?.[reveal.team]?.name ?? reveal.team}.`
+                  : reveal.teamChoice === undefined || reveal.teamChoice === null
+                    ? 'No valid team answer — no points.'
+                    : 'Wrong — no points.'}
+              </p>
+            )}
           </CardContent>
         </Card>
-        {actionError && <div className="error-message text-center">{actionError}</div>}
-        {!room.revealed && (
-          <div className="flex flex-col items-center gap-1">
-            <p className="text-sm italic">
-              {turnTeamName} is answering — {teamTaps.length} tap{teamTaps.length === 1 ? '' : 's'} so far
-            </p>
-            <Button
-              size="lg"
-              disabled={correctIndex === undefined || correctIndex === null}
-              onClick={act(() => revealTile({ code, room, tileId: activeTileId, correctIndex }))}
-            >
-              Reveal answer
-            </Button>
-            {(correctIndex === undefined || correctIndex === null) && (
-              <span className="text-xs italic opacity-70">
-                this room has no answer key (created by an older version) — launch the quiz again
-              </span>
-            )}
-          </div>
-        )}
-        {room.revealed && reveal && (
-          <div className="flex flex-col items-center gap-2">
-            <p className="text-xl">
-              {reveal.wasCorrect
-                ? `Correct! +1 for ${room.teams?.[reveal.team]?.name ?? reveal.team}.`
-                : reveal.teamChoice === undefined || reveal.teamChoice === null
-                  ? 'No valid team answer — no points.'
-                  : 'Wrong — no points.'}
-            </p>
-            <Button size="lg" onClick={act(() => nextTurn({ code, room, tileId: activeTileId }))}>
-              Next turn
-            </Button>
-          </div>
-        )}
+        {roomCodeCorner}
       </div>
     );
   }
@@ -254,35 +198,33 @@ const HostRoomInner = () => {
   return (
     <div className="mx-auto max-w-4xl flex flex-col gap-6">
       <ScoreBar room={room}/>
-      <p className="text-center text-xl">
-        <strong>{turnTeamName}</strong> picks a tile — say it out loud, the host clicks it.
+      <p className="text-center text-2xl">
+        <strong>{turnTeamName}</strong> picks a tile — say it out loud!
       </p>
-      {actionError && <div className="error-message text-center">{actionError}</div>}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         {tiles.map(([tileId, tile]) => {
           const used = !!room.usedTiles?.[tileId];
           return (
-            <button
+            <div
               key={tileId}
-              disabled={used}
-              onClick={act(() => pickTile(code, tileId))}
-              className={`h-28 rounded-xl p-4 text-lg font-semibold transition-all ${
+              className={`flex h-28 items-center justify-center rounded-xl p-4 text-xl font-semibold text-center ${
                 used
-                  ? 'bg-gray-800/40 text-gray-500 line-through cursor-not-allowed'
-                  : 'bg-purple-800/40 text-purple-100 hover:bg-purple-700/60 cursor-pointer'
+                  ? 'bg-gray-800/40 text-gray-500 line-through'
+                  : 'bg-purple-800/40 text-purple-100'
               }`}
             >
               {tile.tileName}
-            </button>
+            </div>
           );
         })}
       </div>
+      {roomCodeCorner}
     </div>
   );
 };
 
 const HostRoom = () => (
-  <main className="min-h-screen bg-gradient-to-b from-purple-950 to-indigo-950">
+  <main className="min-h-screen">
     <div className="container mx-auto px-4 py-16">
       <Suspense fallback={<Loading/>}>
         <HostRoomInner/>
