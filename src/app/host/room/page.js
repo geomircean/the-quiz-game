@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { QRCodeSVG } from 'qrcode.react';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components';
 import Loading from '@/components/loading';
 import { useAuth } from '@/context/auth-context';
@@ -26,6 +27,38 @@ const TeamRoster = ({ label, players }) => (
   </div>
 );
 
+// QR + copyable link for joining the room — shown on the shared screen so
+// phones can scan instead of typing the code.
+const JoinInvite = ({ joinUrl }) => {
+  const [copyState, setCopyState] = useState('idle');
+
+  if (!joinUrl) return null;
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(joinUrl);
+      setCopyState('copied');
+    } catch {
+      // Clipboard can be unavailable (permissions, non-HTTPS) — the link is
+      // visible right above the button, so just say so.
+      setCopyState('failed');
+    }
+    setTimeout(() => setCopyState('idle'), 2000);
+  };
+
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <div className="rounded-xl bg-white p-3">
+        <QRCodeSVG value={joinUrl} size={180} marginSize={1} title={`Join the room at ${joinUrl}`}/>
+      </div>
+      <p className="text-sm break-all">{joinUrl}</p>
+      <Button size="sm" variant="outline" onClick={copy}>
+        {copyState === 'copied' ? 'Copied!' : copyState === 'failed' ? 'Copy the link above manually' : 'Copy join link'}
+      </Button>
+    </div>
+  );
+};
+
 const ScoreBar = ({ room }) => (
   <div className="flex justify-center gap-8 text-xl">
     <span className={room.currentTurn === 'A' && room.status === 'playing' ? 'font-bold underline' : ''}>
@@ -47,6 +80,10 @@ const HostRoomInner = () => {
   const { room, error, isLoading } = useRoom(code);
   const answerKey = useAnswerKey(code);
   const [actionError, setActionError] = useState(null);
+  // Derived from window at runtime — the static build has no origin.
+  const joinUrl = typeof window === 'undefined' || !code
+    ? null
+    : `${window.location.origin}/play/?room=${code}`;
 
   // Rooms are member-readable — a joined player opening the host URL gets
   // sent to their own view instead of the host controls.
@@ -88,9 +125,13 @@ const HostRoomInner = () => {
           <CardHeader>
             <CardTitle>{room.quizName}</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-2">
-            <p>Players join at this site with the code:</p>
-            <div className="text-6xl font-bold tracking-[0.3em]">{code}</div>
+          <CardContent className="flex flex-col gap-4">
+            <div>
+              <p>Scan to join, or type the code at this site:</p>
+              {/* pl compensates the trailing letter-space so the glyphs are truly centered */}
+              <div className="text-6xl font-bold tracking-[0.3em] pl-[0.3em]">{code}</div>
+            </div>
+            <JoinInvite joinUrl={joinUrl}/>
             <p className="text-sm italic">{tiles.length} tiles · waiting in the lobby</p>
           </CardContent>
         </Card>
