@@ -92,9 +92,11 @@ folded into the lists above and not repeated here.
       paint is gone and the backdrop is global; per-page duplicate gradients and
       the teal/olive tokens themselves still to consolidate.)*
       (`src/app/globals.css` + pages)
-- [ ] **Global button border fights the components.** `button { border: 2px solid
+- [x] **Global button border fights the components.** `button { border: 2px solid
       var(--foreground) }` forces a border on every button (why the landing icons
       need `border-0`). Remove it; let the Button variants own their borders.
+      *(Done: rule removed, `border-0` hacks dropped, the outline variant re-themed
+      purple, and the question editor's olive/cyan one-off buttons normalized.)*
       (`src/app/globals.css`)
 - [ ] **Question editor isn't responsive.** Hardcoded `px-24` and horizontal answer
       rows overflow on phone widths. (`src/app/admin/question/page.js`,

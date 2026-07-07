@@ -84,10 +84,6 @@ body {
   color: var(--foreground);
 }
 
-button {
-  border: 2px solid var(--foreground);
-}
-
 .error-message {
   @apply text-red-600;
   font-style: italic;

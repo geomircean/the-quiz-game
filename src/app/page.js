@@ -23,10 +23,10 @@ const Home = () => {
     <main>
       <div className="container mx-auto px-4 py-16">
         <div className="w-full flex justify-end gap-2">
-          <Button className="border-0" onClick={() => router.push('/host')} aria-label="Host mode">
+          <Button onClick={() => router.push('/host')} aria-label="Host mode">
             <TvIcon className="size-6 text-white"/>
           </Button>
-          <Button className="border-0" onClick={() => router.push('/admin')} aria-label="Admin">
+          <Button onClick={() => router.push('/admin')} aria-label="Admin">
             <Cog8ToothIcon className="size-6 text-white"/>
           </Button>
         </div>

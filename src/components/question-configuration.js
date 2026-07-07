@@ -84,7 +84,8 @@ const QuestionConfiguration = ({ questionIndex, validation }) => {
                           />
                         </label>
                         <Button
-                          className="border-2 border-foreground rounded-3xl"
+                          variant="ghost"
+                          aria-label={`Delete answer ${index + 1}`}
                           onClick={() => deleteAnswer({ questionIndex, answerIndex: index })}
                         >
                           <TrashIcon className="size-8 p-1.5 text-red-600"/>
@@ -101,8 +102,7 @@ const QuestionConfiguration = ({ questionIndex, validation }) => {
           {validation?.hasNoCorrectAnswers && <div className="error-message">Please select the correct answer.</div>}
 
           {currentQuestion.possibleAnswers.length < 4 &&
-            <Button className="border-2 border-foreground hover:bg-cyan-900 p-3 mt-4"
-                    onClick={() => addAnswer({ questionIndex })}>Add Answer</Button>}
+            <Button className="mt-4" onClick={() => addAnswer({ questionIndex })}>Add Answer</Button>}
         </div>
       </div>
     </div>
