@@ -1,8 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { Button, Input } from '@/components/base';
 import { useQuizConfigStore } from '@/stores/quiz-configuration-store';
-import { TrashIcon } from '@heroicons/react/20/solid';
+import { TrashIcon, XMarkIcon } from '@heroicons/react/20/solid';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
 
@@ -15,8 +16,11 @@ const QuestionConfiguration = ({ questionIndex, validation }) => {
     addAnswer,
     deleteAnswer,
     updateAnswer,
-    updateIsCorrect
+    updateIsCorrect,
+    addTag,
+    removeTag,
   } = useQuizConfigStore();
+  const [tagDraft, setTagDraft] = useState('');
   const currentQuestion = fullQuiz[questionIndex];
   const starIconStyling= 'size-10 text-yellow-300'
   if (!currentQuestion) {
@@ -55,6 +59,50 @@ const QuestionConfiguration = ({ questionIndex, validation }) => {
           </label>
           {validation?.questionText && <div className="error-message">Please fill in the question text.</div>}
           {validation?.tileName && <div className="error-message">Please fill in the tile name.</div>}
+          <div className="flex flex-col gap-2 py-2">
+            <span>Tags <span className="text-sm italic opacity-70">(optional — for search &amp; filtering)</span></span>
+            {(currentQuestion.tags ?? []).length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {(currentQuestion.tags ?? []).map((tag) => (
+                  <span key={tag} className="flex items-center gap-1 rounded-full bg-purple-700/60 px-3 py-1 text-sm">
+                    {tag}
+                    <button
+                      type="button"
+                      aria-label={`Remove tag ${tag}`}
+                      className="opacity-70 hover:opacity-100"
+                      onClick={() => removeTag({ questionIndex, tag })}
+                    >
+                      <XMarkIcon className="size-4"/>
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                value={tagDraft}
+                maxLength={30}
+                placeholder="e.g. geography"
+                className="max-w-56"
+                onChange={(ev) => setTagDraft(ev.target.value)}
+                onKeyDown={(ev) => {
+                  if (ev.key === 'Enter') {
+                    ev.preventDefault();
+                    addTag({ questionIndex, value: tagDraft });
+                    setTagDraft('');
+                  }
+                }}
+              />
+              <Button
+                variant="outline"
+                disabled={!tagDraft.trim()}
+                onClick={() => { addTag({ questionIndex, value: tagDraft }); setTagDraft(''); }}
+              >
+                Add tag
+              </Button>
+            </div>
+          </div>
         </div>
         <div>
           {

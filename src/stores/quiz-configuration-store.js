@@ -5,6 +5,7 @@ const questionStruct = {
   questionText: '',
   tileName: '',
   possibleAnswers: [],
+  tags: [],
 };
 
 // Form state for the single-question editor (QuestionConfiguration).
@@ -51,6 +52,20 @@ export const useQuizConfigStore = create((set) => ({
     const { fullQuiz } = state;
     fullQuiz[questionIndex].tileName = value;
 
+    return { fullQuiz };
+  }),
+  addTag: ({ questionIndex, value }) => set(state => {
+    const { fullQuiz } = state;
+    const tag = value.trim().toLowerCase();
+    const tags = fullQuiz[questionIndex].tags ?? [];
+    if (tag && !tags.includes(tag) && tags.length < 10) {
+      fullQuiz[questionIndex].tags = [...tags, tag];
+    }
+    return { fullQuiz };
+  }),
+  removeTag: ({ questionIndex, tag }) => set(state => {
+    const { fullQuiz } = state;
+    fullQuiz[questionIndex].tags = (fullQuiz[questionIndex].tags ?? []).filter((t) => t !== tag);
     return { fullQuiz };
   }),
   resetQuiz: () => set({ fullQuiz: [] }),

@@ -127,6 +127,19 @@ await check('a junk entry hidden at position 2 is also rejected', 'deny', () =>
       { answerMessage: 'Lyon', isCorrect: false, leak: 1 },
     ],
   }));
+// Tags: optional list, capped at 10.
+await check('A creates a question with tags', 'allow', async () => {
+  const taggedRef = await addDoc(collection(db, 'questions'), {
+    ...questionPayload, ownerId: aliceUid, tags: ['geography', 'europe'],
+  });
+  await deleteDoc(taggedRef);
+});
+await check('tags must be a list', 'deny', () =>
+  addDoc(collection(db, 'questions'), { ...questionPayload, ownerId: aliceUid, tags: 'geography' }));
+await check('more than 10 tags is rejected', 'deny', () =>
+  addDoc(collection(db, 'questions'), {
+    ...questionPayload, ownerId: aliceUid, tags: Array.from({ length: 11 }, (_, i) => `t${i}`),
+  }));
 await signOut(auth);
 
 // --- Quizmaster B: cannot touch A's library --------------------------------

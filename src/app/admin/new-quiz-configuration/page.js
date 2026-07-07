@@ -52,6 +52,12 @@ const QuizBuilder = () => {
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [hideAdded, setHideAdded] = useState(false);
+  const [selectedTags, setSelectedTags] = useState([]);
+
+  const toggleTag = (tag) =>
+    setSelectedTags((current) => current.includes(tag)
+      ? current.filter((t) => t !== tag)
+      : [...current, tag]);
 
   // Mix-and-match: brand-new questions are held as LOCAL DRAFTS and only
   // written to the library when the quiz itself is saved — abandoning the
@@ -203,9 +209,12 @@ const QuizBuilder = () => {
   const totalCount = liveSelectedCount + draftQuestions.length;
   const oddTileCount = totalCount > 0 && totalCount % 2 === 1;
 
+  const allTags = [...new Set((questions ?? []).flatMap((q) => q.tags ?? []))].sort();
   const normalizedSearch = search.trim().toLowerCase();
+  // Selected tags narrow (AND); search matches tile name or question text.
   const filteredQuestions = (questions ?? []).filter((q) => {
     if (hideAdded && selectedIds.includes(q.id)) return false;
+    if (selectedTags.some((tag) => !(q.tags ?? []).includes(tag))) return false;
     if (!normalizedSearch) return true;
     return q.tileName.toLowerCase().includes(normalizedSearch)
       || q.questionText.toLowerCase().includes(normalizedSearch);
@@ -363,6 +372,29 @@ const QuizBuilder = () => {
             <Checkbox checked={hideAdded} onCheckedChange={(value) => setHideAdded(!!value)}/>
             Hide questions already in the quiz
           </label>
+          {allTags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              {allTags.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => toggleTag(tag)}
+                  className={`rounded-full px-3 py-1 text-sm transition-colors ${
+                    selectedTags.includes(tag)
+                      ? 'bg-purple-500 text-white'
+                      : 'bg-purple-900/50 text-purple-200 hover:bg-purple-700/60'
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+              {selectedTags.length > 0 && (
+                <button type="button" className="text-sm underline opacity-80" onClick={() => setSelectedTags([])}>
+                  clear
+                </button>
+              )}
+            </div>
+          )}
           <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-1">
             {libraryLoading && <Loading/>}
             {!libraryLoading && !questions?.length && (
@@ -371,7 +403,7 @@ const QuizBuilder = () => {
             {!libraryLoading && questions?.length > 0 && filteredQuestions.length === 0 && (
               <p className="italic text-sm">No questions match.</p>
             )}
-            {filteredQuestions.map(({ id: questionId, tileName, questionText }) => (
+            {filteredQuestions.map(({ id: questionId, tileName, questionText, tags }) => (
               <label key={questionId} className="flex items-center gap-3 rounded-md border border-purple-600 bg-purple-900/30 p-3 cursor-pointer">
                 <Checkbox
                   checked={selectedIds.includes(questionId)}
@@ -380,6 +412,15 @@ const QuizBuilder = () => {
                 <span className="flex flex-col min-w-0">
                   <span className="font-semibold">{tileName}</span>
                   <span className="text-sm opacity-80">{questionText}</span>
+                  {(tags ?? []).length > 0 && (
+                    <span className="flex flex-wrap gap-1 pt-1">
+                      {tags.map((tag) => (
+                        <span key={tag} className="rounded-full bg-purple-900/60 px-2 py-0.5 text-xs text-purple-300">
+                          {tag}
+                        </span>
+                      ))}
+                    </span>
+                  )}
                 </span>
               </label>
             ))}
