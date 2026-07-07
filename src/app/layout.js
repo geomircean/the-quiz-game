@@ -12,7 +12,8 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      {/* The app-wide backdrop lives here so pages don't each repaint it. */}
+      <body className={`${inter.className} min-h-screen bg-gradient-to-b from-purple-950 to-indigo-950`}>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

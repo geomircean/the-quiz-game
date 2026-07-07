@@ -77,10 +77,11 @@
   }
 }
 
+/* The backdrop (purple gradient + min-height) lives on <body> in
+   layout.js as Tailwind utilities — no unlayered background here, it
+   would win over the utility layer and repaint everything teal. */
 body {
-  height: 100vh;
   color: var(--foreground);
-  background: linear-gradient(to bottom, transparent, var(--background)) var(--background);
 }
 
 button {

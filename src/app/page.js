@@ -20,7 +20,7 @@ const Home = () => {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-purple-950 to-indigo-950">
+    <main>
       <div className="container mx-auto px-4 py-16">
         <div className="w-full flex justify-end gap-2">
           <Button className="border-0" onClick={() => router.push('/host')} aria-label="Host mode">
