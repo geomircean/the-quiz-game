@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "demo-the-quiz-game"
+    "default": "demo-the-quiz-game",
+    "prod": "quiz-game-47530"
   }
 }

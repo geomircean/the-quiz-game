@@ -45,10 +45,14 @@ if (
   typeof window !== 'undefined' &&
   !globalThis.__firebaseEmulatorsConnected
 ) {
-  // Ports match the "emulators" block in firebase.json.
-  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
-  connectFirestoreEmulator(db, '127.0.0.1', 8181);
-  connectDatabaseEmulator(rtdb, '127.0.0.1', 9000);
+  // Connect to the emulators on the SAME host the app was loaded from, so a
+  // phone opening http://<mac-lan-ip>:3000 reaches the emulators on the Mac
+  // (not its own loopback). The laptop naturally uses "localhost". Ports
+  // match the "emulators" block in firebase.json.
+  const host = window.location.hostname;
+  connectAuthEmulator(auth, `http://${host}:9099`, { disableWarnings: true });
+  connectFirestoreEmulator(db, host, 8181);
+  connectDatabaseEmulator(rtdb, host, 9000);
   globalThis.__firebaseEmulatorsConnected = true;
 
   // Emulator-only test hook: lets browser tooling sign in a fake Google user

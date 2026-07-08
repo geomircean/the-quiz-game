@@ -11,10 +11,10 @@
     "rules": "database.rules.json"
   },
   "emulators": {
-    "auth": { "port": 9099 },
-    "firestore": { "port": 8181 },
-    "database": { "port": 9000 },
-    "ui": { "enabled": true, "port": 4001 },
+    "auth": { "host": "0.0.0.0", "port": 9099 },
+    "firestore": { "host": "0.0.0.0", "port": 8181 },
+    "database": { "host": "0.0.0.0", "port": 9000 },
+    "ui": { "enabled": true, "host": "0.0.0.0", "port": 4001 },
     "singleProjectMode": true
   }
 }
