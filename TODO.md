@@ -156,8 +156,10 @@ folded into the lists above and not repeated here.
       player move/kick — while /host/room is a pure display with zero controls;
       Launch lands on the control with an "Open big screen" button.)*
       (`src/app/host/control/page.js`, `src/app/host/room/page.js`)
-- [ ] **Generate random quiz** — finish the disabled button (pull N random library
-      questions, optionally by tag). (`src/app/admin/page.js`)
+- [x] **Generate random quiz** — finish the disabled button (pull N random library
+      questions, optionally by tag). *(Done: hub button opens a sheet — name, count
+      clamped to the pool, tag filter, answer mode — shuffles and saves a normal
+      quiz you can edit afterwards.)* (`src/components/random-quiz-sheet.js`)
 - [ ] **QM manages players** — move a player between teams, kick + let them rejoin,
       a "my team" screen, and a "leave team" button (incl. letting a player switch
       team themselves while still in the lobby). *(Partially done via the command

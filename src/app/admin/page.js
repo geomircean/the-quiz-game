@@ -9,6 +9,7 @@ import { useQuizzes } from '@/hooks/useQuizzes';
 import { useLaunchQuiz } from '@/hooks/useLaunchQuiz';
 import { useToast } from '@/context/toast-context';
 import { deleteQuiz } from '@/data/quizzes';
+import RandomQuizSheet from '@/components/random-quiz-sheet';
 
 const BASE_URL = '/admin';
 
@@ -22,6 +23,7 @@ const AdminLanding = () => {
   const { quizzes, error, isLoading } = useQuizzes();
   const { launch, isLaunching, launchError } = useLaunchQuiz();
   const [deleteError, setDeleteError] = useState(null);
+  const [isRandomOpen, setIsRandomOpen] = useState(false);
 
   const onDeleteQuiz = async (id, name) => {
     if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) return;
@@ -38,10 +40,7 @@ const AdminLanding = () => {
     <div className="flex min-h-screen flex-col flex-wrap items-center justify-around gap-1">
       <div className="flex flex-row gap-5 justify-evenly">
         <Button onClick={() => router.push(`${BASE_URL}/new-quiz-configuration`)}>Configure New Quiz</Button>
-        <span className="flex flex-col items-center">
-          <Button disabled onClick={() => {}}>Generate Random Quiz</Button>
-          <span className="text-xs italic opacity-70">coming later</span>
-        </span>
+        <Button onClick={() => setIsRandomOpen(true)}>Generate Random Quiz</Button>
       </div>
       <div className="flex flex-row gap-2">
         <Button onClick={() => router.push(`${BASE_URL}/question`)}> Add Question To Your Database</Button>
@@ -86,6 +85,7 @@ const AdminLanding = () => {
           ))}
         </div>
       </div>
+      <RandomQuizSheet open={isRandomOpen} onOpenChange={setIsRandomOpen}/>
     </div>
   );
 };
