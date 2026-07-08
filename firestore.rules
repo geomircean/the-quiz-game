@@ -40,6 +40,13 @@ service cloud.firestore {
         && (answers.size() <= 7 || isValidAnswer(answers[7]));
     }
 
+    // Tags are optional, owner-only metadata (they never reach a room
+    // board), so a list + size cap suffices — no per-element unrolling.
+    function hasValidTags(data) {
+      return !data.keys().hasAny(['tags'])
+        || (data.tags is list && data.tags.size() <= 10);
+    }
+
     function isValidQuestion(data) {
       return data.questionText is string
         && data.questionText.size() > 0
@@ -48,9 +55,10 @@ service cloud.firestore {
         && data.tileName.size() > 0
         && data.tileName.size() <= 120
         && isValidAnswersList(data.possibleAnswers)
+        && hasValidTags(data)
         && data.createdAt is timestamp
         && data.updatedAt is timestamp
-        && data.keys().hasOnly(['ownerId', 'questionText', 'tileName', 'possibleAnswers', 'createdAt', 'updatedAt']);
+        && data.keys().hasOnly(['ownerId', 'questionText', 'tileName', 'possibleAnswers', 'tags', 'createdAt', 'updatedAt']);
     }
 
     // Private question library — only the owner can see or touch it.

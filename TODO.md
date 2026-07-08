@@ -139,7 +139,10 @@ folded into the lists above and not repeated here.
 - [ ] **Make the CI rules-gate mandatory** — GitHub branch protection so the rules
       suite blocks merge.
 - [ ] **Bulk-upload questions** for the QM — mechanism + UX TBD.
-- [ ] **Question search + tags.**
+- [x] **Question search + tags.** *(Done: optional tags on questions — normalized,
+      capped at 10, rules-validated; tag editor in the question form; search +
+      clickable tag-chip filters (AND) on the library page and in the builder's
+      drawer. Tags are owner-only metadata and never reach room boards.)*
 - [x] **Mix-and-match quiz building.** Creating a quiz currently only uses saved
       questions; allow authoring brand-new questions inline in the same flow.
       *(Amended: inline questions are held as local drafts — editable/removable —

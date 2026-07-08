@@ -16,10 +16,12 @@ const questionsCollection = () => collection(db, 'questions');
 
 // Only the payload fields below are ever written — ownerId is stamped from
 // the signed-in uid, never taken from the caller's data object.
-const toPayload = ({ questionText, tileName, possibleAnswers }) => ({
+// Tags are normalized: lowercased, trimmed, deduped, capped at 10.
+const toPayload = ({ questionText, tileName, possibleAnswers, tags }) => ({
   questionText,
   tileName,
   possibleAnswers: possibleAnswers.map(({ answerMessage, isCorrect }) => ({ answerMessage, isCorrect })),
+  tags: [...new Set((tags ?? []).map((t) => t.trim().toLowerCase()).filter(Boolean))].slice(0, 10),
 });
 
 export const subscribeToOwnQuestions = (ownerId, onChange, onError) => {
