@@ -5,6 +5,11 @@ File pointers are best-guess starting points, not gospel.
 
 ## UX
 
+- [ ] **Rework the app colours — casting-safe palette.** The purple→indigo
+      gradient renders horribly when the host screen is cast/mirrored (banding,
+      washed out). Move to a flatter, high-contrast, cast-friendly palette
+      (esp. the host display at `/host/room`); avoid large gradients on the
+      shared screen. (Pairs with "consolidate to one token-driven palette".)
 - [ ] **Non-turn tiles look clickable.** The team whose turn it *isn't* shouldn't
       see tappable-looking tiles; the on-turn team's tiles should read as clearly
       clickable. (`src/app/host/room/page.js`)
@@ -125,6 +130,14 @@ folded into the lists above and not repeated here.
 
 ## Functional
 
+- [ ] **QM-only question note (presenter/helper text).** Add an optional
+      per-question field the QM fills in — displayed ONLY to the host (command
+      center), never to players or on the shared screen. For presenter cues /
+      extra details the QM shares verbally when reading the question. Needs: a
+      field on the question form + schema (`presenterNote`?), owner-only so it
+      stays off player-readable room boards (like the answer key), and rendering
+      in `/host/control` next to the question. (`src/components/question-configuration.js`,
+      `src/data/questions.js`, `firestore.rules`, `src/app/host/control/page.js`)
 - [ ] **App Check + reCAPTCHA** on Firestore + RTDB — reCAPTCHA is the attestation
       provider behind App Check.
 - [ ] **Room TTL** — auto-expire / clean up stale rooms (needs a scheduled Cloud
