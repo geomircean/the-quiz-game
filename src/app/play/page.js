@@ -277,7 +277,7 @@ const PlayInner = () => {
 };
 
 const Play = () => (
-  <main className="min-h-screen bg-gradient-to-b from-purple-950 to-indigo-950">
+  <main className="min-h-screen">
     <div className="container mx-auto px-4 py-16">
       <Suspense fallback={<Loading/>}>
         <PlayInner/>

@@ -10,7 +10,9 @@ const labelVariants = cva(
     variants: {
       theme: {
         default: 'text-foreground',
-        purple: 'text-purple-200',
+        // Soft on-palette label (kept the "purple" key so call sites don't
+        // need touching until their per-screen phase).
+        purple: 'text-[#C7D2EC]',
       },
     },
     defaultVariants: {
