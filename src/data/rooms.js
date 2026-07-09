@@ -69,6 +69,9 @@ export const createRoom = async ({ hostId, quiz, questions }) => {
     teams: quiz.teams ?? { A: { name: 'Team 1' }, B: { name: 'Team 2' } },
     board,
     createdAt: serverTimestamp(),
+    // Drives the room TTL: a scheduled function removes rooms idle past the
+    // cutoff. Bumped on create, every host action, and each player join.
+    lastActiveAt: serverTimestamp(),
   };
 
   for (let attempt = 0; attempt < CODE_ATTEMPTS; attempt += 1) {
@@ -95,7 +98,10 @@ export const subscribeToAnswerKey = (code, onChange, onError) =>
   onValue(ref(rtdb, `roomKeys/${code}`), (snapshot) => onChange(snapshot.val()), onError);
 
 export const joinRoom = ({ code, uid, name, team }) =>
-  set(ref(rtdb, `rooms/${code}/players/${uid}`), { name, team, connected: true });
+  update(ref(rtdb, `rooms/${code}`), {
+    [`players/${uid}`]: { name, team, connected: true },
+    lastActiveAt: serverTimestamp(),
+  });
 
 export const subscribeToRoom = (code, onChange, onError) =>
   onValue(ref(rtdb, `rooms/${code}`), (snapshot) => onChange(snapshot.val()), onError);
@@ -120,8 +126,11 @@ export const watchPresence = (code, uid) => {
   };
 };
 
-// Host-only control writes (P4 grows these into the full game loop).
-export const updateRoom = (code, changes) => update(ref(rtdb, `rooms/${code}`), changes);
+// Host-only control writes (P4 grows these into the full game loop). Every
+// host action also refreshes lastActiveAt so an in-progress game never
+// expires under the room TTL.
+export const updateRoom = (code, changes) =>
+  update(ref(rtdb, `rooms/${code}`), { ...changes, lastActiveAt: serverTimestamp() });
 
 // Command-center player management — rules allow the host to modify or
 // remove EXISTING players only (nobody can create a phantom membership).

@@ -47,6 +47,6 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
       - name: Deploy to Firebase (prod)
-        run: npx firebase deploy --project prod --only hosting,firestore,database --non-interactive
+        run: npx firebase deploy --project prod --only hosting,firestore,database,functions --non-interactive
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json

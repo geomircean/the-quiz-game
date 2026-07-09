@@ -10,6 +10,10 @@
         "quizId": { ".validate": "newData.isString()" },
         "quizName": { ".validate": "newData.isString() && newData.val().length <= 120" },
         "createdAt": { ".validate": "newData.isNumber()" },
+        "lastActiveAt": {
+          ".write": "auth != null && (root.child('rooms').child($code).child('hostId').val() === auth.uid || newData.parent().child('players').child(auth.uid).exists())",
+          ".validate": "newData.val() === now"
+        },
         "teams": {
           ".validate": "newData.hasChildren(['A', 'B'])",
           "A": {

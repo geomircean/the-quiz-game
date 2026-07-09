@@ -140,8 +140,8 @@ folded into the lists above and not repeated here.
       `src/data/questions.js`, `firestore.rules`, `src/app/host/control/page.js`)
 - [ ] **App Check + reCAPTCHA** on Firestore + RTDB — reCAPTCHA is the attestation
       provider behind App Check.
-- [ ] **Room TTL** — auto-expire / clean up stale rooms (needs a scheduled Cloud
-      Function).
+- [x] **Room TTL** — a scheduled Cloud Function (`functions/index.js`) deletes
+      rooms + answer keys idle > 4h (`lastActiveAt`); runs every 30 min.
 - [ ] **Restrict who can be a QM (few known QMs):** add an `allowedQms/{email}`
       collection writable only by a super-admin uid; make `firestore.rules`
       `isQuizmaster()` (and the client check in `src/context/auth-context.js`)

@@ -42,3 +42,6 @@ next-env.d.ts
 # claude code / mcp tooling
 /.claude
 /.playwright-mcp
+
+# Firebase Functions deps (installed on deploy)
+functions/node_modules/

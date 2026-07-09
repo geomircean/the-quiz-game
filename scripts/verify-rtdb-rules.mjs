@@ -174,6 +174,29 @@ await check('player cannot smuggle extra fields into membership', 'deny', () =>
 await check('player updates own presence flag', 'allow', () =>
   set(ref(player.rtdb, `rooms/${CODE}/players/${playerUid}/connected`), true));
 
+// --- Room TTL (lastActiveAt) -------------------------------------------------
+// The scheduled cleanup deletes rooms idle past the cutoff; lastActiveAt is
+// the freshness stamp. Host + members may bump it (only to the server clock);
+// a joining player bumps it in the same write; outsiders and spoofs are out.
+await check('host refreshes lastActiveAt', 'allow', () =>
+  update(ref(host.rtdb, `rooms/${CODE}`), { lastActiveAt: serverTimestamp() }));
+await check('member refreshes lastActiveAt', 'allow', () =>
+  update(ref(player.rtdb, `rooms/${CODE}`), { lastActiveAt: serverTimestamp() }));
+await check('host cannot spoof lastActiveAt (must equal server now)', 'deny', () =>
+  update(ref(host.rtdb, `rooms/${CODE}`), { lastActiveAt: 1 }));
+await check('outsider cannot bump lastActiveAt', 'deny', () =>
+  update(ref(outsider.rtdb, `rooms/${CODE}`), { lastActiveAt: serverTimestamp() }));
+const CODE3 = randomCode();
+await check('host creates a room for the join-bump check', 'allow', () =>
+  set(ref(host.rtdb, `rooms/${CODE3}`), { ...roomDoc, lastActiveAt: serverTimestamp() }));
+await check('joining player writes membership + lastActiveAt in one update', 'allow', () =>
+  update(ref(outsider.rtdb, `rooms/${CODE3}`), {
+    [`players/${outsiderUser.user.uid}`]: { name: 'Late', team: 'A', connected: true },
+    lastActiveAt: serverTimestamp(),
+  }));
+await check('non-member cannot bump lastActiveAt without joining', 'deny', () =>
+  update(ref(rivalHost.rtdb, `rooms/${CODE3}`), { lastActiveAt: serverTimestamp() }));
+
 // --- Host-only control ------------------------------------------------------
 await check('player cannot change scores', 'deny', () =>
   set(ref(player.rtdb, `rooms/${CODE}/scores/A`), 99));

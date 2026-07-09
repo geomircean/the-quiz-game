@@ -35,6 +35,11 @@ jobs:
 
       - run: npm ci
 
+      # The room-TTL sweep check (part of verify:rules) uses the Cloud
+      # Functions code + firebase-admin, which live in functions/.
+      - name: Install functions deps
+        run: npm --prefix functions ci
+
       - name: Lint
         run: npm run lint
 

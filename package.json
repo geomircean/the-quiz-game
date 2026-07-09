@@ -9,8 +9,9 @@
     "start": "next start",
     "lint": "eslint .",
     "emulators": "firebase emulators:start --project demo-the-quiz-game",
-    "verify:rules": "node scripts/verify-rules.mjs && node scripts/verify-rtdb-rules.mjs",
-    "deploy": "next build && firebase deploy --project prod --only hosting,firestore,database"
+    "verify:rules": "node scripts/verify-rules.mjs && node scripts/verify-rtdb-rules.mjs && node scripts/test-ttl.mjs",
+    "deploy": "next build && firebase deploy --project prod --only hosting,firestore,database,functions",
+    "verify:ttl": "node scripts/test-ttl.mjs"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
