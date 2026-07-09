@@ -1,17 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Cog8ToothIcon, TvIcon } from '@heroicons/react/20/solid';
 import { normalizeRoomCode } from '@/data/rooms';
 
+// Room codes are always 4 characters (see CODE_LENGTH in data/rooms).
+const CODE_LENGTH = 4;
+
 // Public landing = the join screen. Players type the room code the host
 // shares; the Quizmaster heads to Build (admin) or Host mode. Navy + gold
-// to match the player phone this leads into.
+// to match the player phone this leads into — the code entry is four
+// character boxes (design bundle), driven by one transparent overlay input
+// so mobile keyboards, paste and auto-caps all just work.
 const Home = () => {
   const router = useRouter();
+  const inputRef = useRef(null);
   const [code, setCode] = useState('');
-  const canJoin = !!normalizeRoomCode(code);
+  const [focused, setFocused] = useState(false);
+  const canJoin = code.length === CODE_LENGTH;
 
   const join = () => {
     const roomCode = normalizeRoomCode(code);
@@ -19,6 +26,8 @@ const Home = () => {
       router.push(`/play/?room=${roomCode}`);
     }
   };
+
+  const activeIndex = focused ? code.length : -1;
 
   return (
     <main className="relative flex min-h-dvh flex-col bg-background text-foreground">
@@ -41,26 +50,59 @@ const Home = () => {
 
           <div className="mt-8 flex flex-col gap-3 rounded-2xl p-6" style={{ background: 'var(--card)', border: '1px solid rgba(255,255,255,.08)' }}>
             <label htmlFor="room-code" className="text-xs tracking-[0.16em]" style={{ color: '#6E82B0' }}>ROOM CODE</label>
-            <input
-              id="room-code"
-              type="text"
-              placeholder="AB3K"
-              value={code}
-              maxLength={8}
-              autoComplete="off"
-              autoCapitalize="characters"
-              onChange={(e) => setCode(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && join()}
-              className="w-full rounded-xl px-4 py-4 text-center font-display uppercase tracking-[0.3em] text-foreground outline-none placeholder:text-[#3A4E7E] focus:border-primary"
-              style={{ background: 'var(--background)', border: '2px solid rgba(246,197,68,.35)', fontSize: 40, letterSpacing: '0.25em' }}
-            />
+
+            {/* Four visual boxes over one transparent input that owns the value. */}
+            <div className="relative" onClick={() => inputRef.current?.focus()}>
+              <div className="flex gap-2.5">
+                {Array.from({ length: CODE_LENGTH }, (_, i) => {
+                  const char = code[i] ?? '';
+                  const active = i === activeIndex;
+                  return (
+                    <div
+                      key={i}
+                      className="flex flex-1 items-center justify-center rounded-[14px] font-display"
+                      style={{
+                        height: 72,
+                        fontSize: 36,
+                        background: active ? 'var(--secondary)' : 'var(--background)',
+                        border: `2px solid ${active ? 'var(--primary)' : 'rgba(246,197,68,.35)'}`,
+                      }}
+                    >
+                      {char || (active
+                        ? <span style={{ width: 3, height: 34, background: 'var(--primary)', animation: 'blink 1s step-end infinite' }}/>
+                        : '')}
+                    </div>
+                  );
+                })}
+              </div>
+              <input
+                ref={inputRef}
+                id="room-code"
+                type="text"
+                value={code}
+                maxLength={CODE_LENGTH}
+                inputMode="text"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="characters"
+                spellCheck={false}
+                aria-label="Room code"
+                onChange={(e) => setCode(normalizeRoomCode(e.target.value).slice(0, CODE_LENGTH))}
+                onKeyDown={(e) => e.key === 'Enter' && join()}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              />
+            </div>
+            <div className="text-[13px]" style={{ color: '#6E82B0' }}>Auto-caps · 4 characters</div>
+
             <button
               type="button"
               onClick={join}
               disabled={!canJoin}
-              className="w-full rounded-xl bg-primary py-4 font-display text-xl tracking-wide text-primary-foreground hover:bg-primary/90 disabled:opacity-45"
+              className="mt-1 w-full rounded-xl bg-primary py-4 font-display text-xl tracking-wide text-primary-foreground hover:bg-primary/90 disabled:opacity-45"
             >
-              JOIN
+              JOIN GAME
             </button>
           </div>
         </div>
