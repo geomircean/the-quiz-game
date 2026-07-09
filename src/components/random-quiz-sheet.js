@@ -109,7 +109,7 @@ const RandomQuizSheet = ({ open, onOpenChange }) => {
           />
         </label>
         {isOdd && (
-          <p className="text-xs italic text-amber-300">
+          <p className="text-xs italic text-primary">
             An odd tile count gives the first team one extra pick — consider an even number.
           </p>
         )}
@@ -123,17 +123,16 @@ const RandomQuizSheet = ({ open, onOpenChange }) => {
                   key={tag}
                   type="button"
                   onClick={() => toggleTag(tag)}
-                  className={`rounded-full px-3 py-1 text-sm transition-colors ${
-                    selectedTags.includes(tag)
-                      ? 'bg-purple-500 text-white'
-                      : 'bg-purple-900/50 text-purple-200 hover:bg-purple-700/60'
-                  }`}
+                  className="rounded-full px-3 py-1 text-sm transition"
+                  style={selectedTags.includes(tag)
+                    ? { background: 'var(--primary)', color: 'var(--primary-foreground)', fontWeight: 700 }
+                    : { background: 'rgba(56,189,248,.12)', color: '#8FD4F5' }}
                 >
                   {tag}
                 </button>
               ))}
               {selectedTags.length > 0 && (
-                <button type="button" className="text-sm underline opacity-80" onClick={() => setSelectedTags([])}>
+                <button type="button" className="text-sm underline" style={{ color: '#9FB4DE' }} onClick={() => setSelectedTags([])}>
                   clear
                 </button>
               )}
@@ -157,7 +156,7 @@ const RandomQuizSheet = ({ open, onOpenChange }) => {
 
         {generateError && <div className="error-message">{generateError}</div>}
 
-        <div className="mt-auto flex items-center justify-between border-t border-purple-700 pt-3">
+        <div className="mt-auto flex items-center justify-between border-t border-white/10 pt-3">
           <span className="text-sm">{effectiveCount || 0} tiles</span>
           <Button onClick={generate} disabled={isGenerating || isLoading}>
             {isGenerating ? 'Generating…' : 'Generate quiz'}

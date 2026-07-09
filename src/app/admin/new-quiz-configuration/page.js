@@ -2,11 +2,8 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { X } from 'lucide-react';
 import {
-  Button,
   Checkbox,
-  Input,
   Label,
   RadioGroup,
   RadioGroupItem,
@@ -18,7 +15,6 @@ import {
 } from '@/components';
 import Loading from '@/components/loading';
 import QuestionConfiguration from '@/components/question-configuration';
-import { ArrowUturnLeftIcon, PencilIcon } from '@heroicons/react/20/solid';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/context/toast-context';
 import { useQuestions } from '@/hooks/useQuestions';
@@ -26,6 +22,10 @@ import { useQuizConfigStore } from '@/stores';
 import { validateQuestion, validateQuizConfig } from '@/app/validations';
 import { addQuestion } from '@/data/questions';
 import { addQuiz, editQuiz, getQuiz } from '@/data/quizzes';
+
+const goldBtn = 'rounded-xl bg-primary px-5 py-2.5 font-display tracking-wide text-primary-foreground hover:bg-primary/90 disabled:opacity-50';
+const outlineBtn = 'rounded-xl border border-white/[.16] px-4 py-2.5 text-sm font-bold text-[#C7D2EC] hover:bg-accent disabled:opacity-40';
+const fieldStyle = { background: 'var(--card)', border: '2px solid rgba(246,197,68,.35)' };
 
 // A quiz is a name + answer mode + POINTERS into the question library.
 // Teams use the MVP defaults (Team 1 / Team 2). Edit mode: ?id=<docId>.
@@ -194,9 +194,9 @@ const QuizBuilder = () => {
 
   if (loadError) {
     return (
-      <div className="flex flex-col items-center gap-4 py-8">
+      <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 px-6 py-16">
         <div className="error-message">Could not load quiz: {loadError}</div>
-        <Button onClick={() => router.push('/admin')}>Back to Admin</Button>
+        <button type="button" onClick={() => router.push('/admin')} className={outlineBtn}>Back to studio</button>
       </div>
     );
   }
@@ -221,214 +221,183 @@ const QuizBuilder = () => {
   });
 
   return (
-    <div className="flex flex-col justify-center gap-4 text-left">
-      <div className="flex justify-between py-5">
-        <Button onClick={() => router.push('/admin')} aria-label="Back to admin"><ArrowUturnLeftIcon className="size-6"/></Button>
-        <Button onClick={save} disabled={isSaving || isAddingNew}>{isSaving ? 'Saving…' : 'Save'}</Button>
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-6 py-8 text-left">
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="button" onClick={() => router.push('/admin')} className="text-sm hover:text-foreground" style={{ color: '#7C8DB5' }}>← Studio</button>
+        <span style={{ color: '#33456F' }}>/</span>
+        <h1 className="font-display tracking-[0.06em]" style={{ fontSize: 28 }}>{id ? 'EDIT QUIZ' : 'NEW QUIZ'}</h1>
+        <button type="button" onClick={save} disabled={isSaving || isAddingNew} className="ml-auto rounded-xl bg-primary px-6 py-2.5 font-display tracking-wide text-primary-foreground hover:bg-primary/90 disabled:opacity-50" style={{ fontSize: 15 }}>
+          {isSaving ? 'SAVING…' : 'SAVE'}
+        </button>
       </div>
-      <div className="mx-auto w-full max-w-3xl flex flex-col gap-6">
-        <h1 className="text-2xl text-center">{id ? 'Edit quiz' : 'Create new quiz'}</h1>
-        {saveError && <div className="error-message text-center">Could not save: {saveError}</div>}
+      {saveError && <div className="error-message">Could not save: {saveError}</div>}
 
-        <label className="flex flex-col gap-2">
-          Quiz Name
-          <Input type="text" value={name} onChange={(e) => setName(e.target.value)}/>
-        </label>
-        {validation?.quizNameMissing && <div className="error-message">Please name the quiz.</div>}
-        {validation?.quizNameTooLong && <div className="error-message">Quiz names are capped at 120 characters.</div>}
+      <div>
+        <div className="mb-2 text-xs tracking-[0.16em]" style={{ color: '#6E82B0' }}>QUIZ NAME</div>
+        <input
+          type="text"
+          value={name}
+          placeholder="Friday Night Trivia"
+          onChange={(e) => setName(e.target.value)}
+          className="w-full rounded-xl px-4 py-3 text-[18px] font-semibold text-foreground outline-none placeholder:text-[#5A6E9E] focus:border-primary"
+          style={fieldStyle}
+        />
+        {validation?.quizNameMissing && <div className="error-message mt-1.5">Please name the quiz.</div>}
+        {validation?.quizNameTooLong && <div className="error-message mt-1.5">Quiz names are capped at 120 characters.</div>}
+      </div>
+
+      <div>
+        <div className="mb-2.5 text-xs tracking-[0.16em]" style={{ color: '#6E82B0' }}>HOW DOES A TEAM ANSWER?</div>
+        <RadioGroup value={answerMode} onValueChange={setAnswerMode} className="flex flex-col gap-2.5">
+          {[
+            { v: 'firstTap', id: 'mode-first-tap', t: 'First tap locks it', d: 'The first player to tap answers for the whole team.' },
+            { v: 'majority', id: 'mode-majority', t: 'Majority wins', d: 'Everyone taps, the most-tapped answer counts (a tie is wrong).' },
+          ].map((m) => {
+            const on = answerMode === m.v;
+            return (
+              <label key={m.v} htmlFor={m.id} className="flex cursor-pointer items-start gap-3 rounded-xl p-3.5" style={{ background: 'var(--card)', border: `2px solid ${on ? 'var(--primary)' : 'rgba(255,255,255,.08)'}` }}>
+                <RadioGroupItem value={m.v} id={m.id} className="mt-0.5"/>
+                <span>
+                  <Label htmlFor={m.id} className="block font-display tracking-[0.03em]" style={{ fontSize: 17 }}>{m.t}</Label>
+                  <span className="text-sm" style={{ color: '#7C8DB5' }}>{m.d}</span>
+                </span>
+              </label>
+            );
+          })}
+        </RadioGroup>
+      </div>
+
+      <div>
+        <div className="mb-1.5 text-xs tracking-[0.16em]" style={{ color: '#6E82B0' }}>TEAMS</div>
+        <div className="flex items-center gap-3 rounded-xl px-4 py-3" style={{ background: 'var(--card)', border: '1px solid rgba(255,255,255,.08)' }}>
+          <span className="inline-flex items-center gap-2 font-display" style={{ color: '#8FD4F5' }}><span className="rounded-full" style={{ width: 10, height: 10, background: 'var(--sky)' }}/>TEAM 1</span>
+          <span className="text-sm" style={{ color: '#6E82B0' }}>vs</span>
+          <span className="inline-flex items-center gap-2 font-display" style={{ color: '#F5B48F' }}><span className="rounded-full" style={{ width: 10, height: 10, background: 'var(--coral)' }}/>TEAM 2</span>
+          <span className="ml-auto text-sm" style={{ color: '#7C8DB5' }}>players pick their team when they join</span>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2.5">
+        <div className="flex items-center gap-2">
+          <span className="text-xs tracking-[0.16em]" style={{ color: '#6E82B0' }}>QUESTIONS IN THIS QUIZ</span>
+          <span className="rounded-full px-2.5 py-0.5 font-display text-sm" style={{ background: 'var(--secondary)', color: '#C7D2EC' }}>{totalCount}</span>
+        </div>
+
+        {orphanedIds.length > 0 && (
+          <p className="text-sm italic text-primary">
+            {orphanedIds.length} previously selected question{orphanedIds.length > 1 ? 's were' : ' was'} deleted from the library and will be removed when you save.
+          </p>
+        )}
+        {validation?.tooManyQuestions && <div className="error-message">A quiz is capped at 50 questions — deselect some.</div>}
+        {oddTileCount && (
+          <p className="text-sm italic text-primary">Heads up: an odd number of tiles gives the first team one extra pick — consider an even count.</p>
+        )}
+        {validation?.noQuestions && <div className="error-message">Pick at least one question.</div>}
+        {totalCount === 0 && selectedIds.length === 0 && (
+          <p className="text-sm italic" style={{ color: '#7C8DB5' }}>No questions yet — add some below.</p>
+        )}
 
         <div className="flex flex-col gap-2">
-          <span>How does a team answer?</span>
-          <RadioGroup value={answerMode} onValueChange={setAnswerMode}>
-            <div className="flex items-center gap-2">
-              <RadioGroupItem value="firstTap" id="mode-first-tap"/>
-              <Label htmlFor="mode-first-tap" theme="purple">
-                First tap locks it — the first player to tap answers for the whole team
-              </Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <RadioGroupItem value="majority" id="mode-majority"/>
-              <Label htmlFor="mode-majority" theme="purple">
-                Majority wins — everyone taps, most-tapped answer counts (a tie is wrong)
-              </Label>
-            </div>
-          </RadioGroup>
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <span>Teams</span>
-          <p className="text-sm italic">Team 1 vs Team 2 — players pick their team when they join.</p>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <span>Questions in this quiz ({totalCount})</span>
-          {orphanedIds.length > 0 && (
-            <p className="text-sm italic text-amber-300">
-              {orphanedIds.length} previously selected question{orphanedIds.length > 1 ? 's were' : ' was'} deleted
-              from the library and will be removed from this quiz when you save.
-            </p>
-          )}
-          {validation?.tooManyQuestions && (
-            <div className="error-message">A quiz is capped at 50 questions — deselect some.</div>
-          )}
-          {oddTileCount && (
-            <p className="text-sm italic text-amber-300">
-              Heads up: an odd number of tiles gives the first team one extra pick —
-              consider an even count.
-            </p>
-          )}
-          {validation?.noQuestions && <div className="error-message">Pick at least one question.</div>}
-
-          {totalCount === 0 && selectedIds.length === 0 && (
-            <p className="text-sm italic opacity-80">No questions yet — add some below.</p>
-          )}
-          <div className="flex flex-col gap-2">
-            {selectedIds.map((qid) => {
-              const question = questionsById.get(qid);
-              return (
-                <div key={qid} className="flex items-center gap-3 rounded-md border border-purple-600 bg-purple-900/30 p-3">
-                  <div className="grow min-w-0">
-                    {question ? (
-                      <>
-                        <span className="font-semibold">{question.tileName}</span>{' '}
-                        <span className="text-sm opacity-80">{question.questionText}</span>
-                      </>
-                    ) : (
-                      <span className="text-sm italic opacity-70">
-                        {libraryReady ? 'Deleted question — dropped on save' : 'Loading…'}
-                      </span>
-                    )}
-                  </div>
-                  <Button size="sm" variant="outline" aria-label="Remove from quiz" onClick={() => toggleQuestion(qid)}>
-                    <X className="size-4"/>
-                  </Button>
+          {selectedIds.map((qid) => {
+            const question = questionsById.get(qid);
+            return (
+              <div key={qid} className="flex items-center gap-3 rounded-xl p-3.5" style={{ background: 'var(--card)', border: '1px solid rgba(255,255,255,.1)' }}>
+                <div className="min-w-0 grow">
+                  {question ? (
+                    <><span className="font-semibold">{question.tileName}</span> <span className="text-sm" style={{ color: '#9FB4DE' }}>{question.questionText}</span></>
+                  ) : (
+                    <span className="text-sm italic" style={{ color: '#7C8DB5' }}>{libraryReady ? 'Deleted question — dropped on save' : 'Loading…'}</span>
+                  )}
                 </div>
-              );
-            })}
-            {draftQuestions.map((draft) => (
-              <div key={draft.localId} className="flex items-center gap-3 rounded-md border border-dashed border-amber-400/70 bg-purple-900/30 p-3">
-                <div className="grow min-w-0">
-                  <span className="mr-2 rounded bg-amber-400/20 px-1.5 py-0.5 text-xs text-amber-300">new</span>
-                  <span className="font-semibold">{draft.tileName}</span>{' '}
-                  <span className="text-sm opacity-80">{draft.questionText}</span>
-                </div>
-                <Button size="sm" variant="outline" aria-label="Edit new question" disabled={isAddingNew} onClick={() => openEditDraft(draft)}>
-                  <PencilIcon className="size-4"/>
-                </Button>
-                <Button size="sm" variant="outline" aria-label="Remove new question" onClick={() => removeDraft(draft.localId)}>
-                  <X className="size-4"/>
-                </Button>
+                <button type="button" aria-label="Remove from quiz" onClick={() => toggleQuestion(qid)} className="flex flex-none items-center justify-center rounded-lg text-base" style={{ width: 30, height: 30, background: 'var(--secondary)', color: '#9FB4DE' }}>×</button>
               </div>
-            ))}
-          </div>
-          {draftQuestions.length > 0 && (
-            <p className="text-xs italic opacity-80">
-              “new” questions are saved to your library together with the quiz.
-            </p>
-          )}
-
-          <div className="flex flex-wrap gap-2 pt-1">
-            <Button onClick={() => setIsLibraryOpen(true)} disabled={isAddingNew}>
-              Add from library
-            </Button>
-            {!isAddingNew && (
-              <Button variant="outline" onClick={openNewQuestion}>
-                Write a new question
-              </Button>
-            )}
-          </div>
-
-          {isAddingNew && (
-            <div className="rounded-md border border-purple-500 bg-purple-900/30 p-4 flex flex-col gap-2">
-              <h3 className="font-semibold">{editingDraftId ? 'Edit new question' : 'New question'}</h3>
-              <p className="text-sm italic opacity-80">
-                Added to this quiz now — written to your library when the quiz is saved.
-              </p>
-              <QuestionConfiguration questionIndex={0} validation={newQuestionValidation}/>
-              <div className="flex gap-2">
-                <Button onClick={addDraftToQuiz}>
-                  {editingDraftId ? 'Update question' : 'Add to quiz'}
-                </Button>
-                <Button variant="outline" onClick={closeQuestionPanel}>
-                  Cancel
-                </Button>
+            );
+          })}
+          {draftQuestions.map((draft) => (
+            <div key={draft.localId} className="flex items-center gap-3 rounded-xl p-3.5" style={{ background: 'var(--card)', border: '1px dashed rgba(246,197,68,.55)' }}>
+              <span className="flex-none rounded-full px-2 py-0.5 text-xs font-bold" style={{ background: 'rgba(246,197,68,.18)', color: 'var(--primary)' }}>new</span>
+              <div className="min-w-0 grow">
+                <span className="font-semibold">{draft.tileName}</span> <span className="text-sm" style={{ color: '#9FB4DE' }}>{draft.questionText}</span>
               </div>
+              <button type="button" aria-label="Edit new question" disabled={isAddingNew} onClick={() => openEditDraft(draft)} className="flex flex-none items-center justify-center rounded-lg text-sm disabled:opacity-40" style={{ width: 30, height: 30, background: 'var(--secondary)', color: '#9FB4DE' }}>✎</button>
+              <button type="button" aria-label="Remove new question" onClick={() => removeDraft(draft.localId)} className="flex flex-none items-center justify-center rounded-lg text-base" style={{ width: 30, height: 30, background: 'rgba(229,72,77,.14)', color: '#F0A0A3' }}>×</button>
             </div>
-          )}
+          ))}
         </div>
+        {draftQuestions.length > 0 && (
+          <p className="text-xs italic" style={{ color: '#7C8DB5' }}>&ldquo;new&rdquo; questions are saved to your library together with the quiz.</p>
+        )}
+
+        <div className="flex flex-wrap gap-2 pt-1">
+          <button type="button" onClick={() => setIsLibraryOpen(true)} disabled={isAddingNew} className={goldBtn} style={{ fontSize: 15 }}>Add from library</button>
+          {!isAddingNew && <button type="button" onClick={openNewQuestion} className={outlineBtn}>Write a new question</button>}
+        </div>
+
+        {isAddingNew && (
+          <div className="mt-1 flex flex-col gap-3 rounded-[18px] p-5" style={{ background: 'var(--card)', border: '1px solid rgba(246,197,68,.35)' }}>
+            <div>
+              <h3 className="font-display tracking-[0.04em]" style={{ fontSize: 18 }}>{editingDraftId ? 'EDIT NEW QUESTION' : 'NEW QUESTION'}</h3>
+              <p className="text-sm" style={{ color: '#7C8DB5' }}>Added to this quiz now — written to your library when the quiz is saved.</p>
+            </div>
+            <QuestionConfiguration questionIndex={0} validation={newQuestionValidation}/>
+            <div className="flex gap-2">
+              <button type="button" onClick={addDraftToQuiz} className={goldBtn} style={{ fontSize: 15 }}>{editingDraftId ? 'Update question' : 'Add to quiz'}</button>
+              <button type="button" onClick={closeQuestionPanel} className={outlineBtn}>Cancel</button>
+            </div>
+          </div>
+        )}
       </div>
 
       <Sheet open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
-        <SheetContent>
-          <SheetTitle>Your question library</SheetTitle>
+        <SheetContent className="gap-3">
+          <SheetTitle className="font-display tracking-[0.04em]">YOUR QUESTION LIBRARY</SheetTitle>
           <SheetDescription>Tick questions to add them to the quiz.</SheetDescription>
-          <Input
+          <input
             type="text"
             placeholder="Search questions…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            className="rounded-xl px-4 py-2.5 text-sm text-foreground outline-none placeholder:text-[#5A6E9E] focus:border-primary"
+            style={{ background: 'var(--card)', border: '2px solid rgba(255,255,255,.1)' }}
           />
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <label className="flex cursor-pointer items-center gap-2 text-sm" style={{ color: '#C7D2EC' }}>
             <Checkbox checked={hideAdded} onCheckedChange={(value) => setHideAdded(!!value)}/>
             Hide questions already in the quiz
           </label>
           {allTags.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
-              {allTags.map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => toggleTag(tag)}
-                  className={`rounded-full px-3 py-1 text-sm transition-colors ${
-                    selectedTags.includes(tag)
-                      ? 'bg-purple-500 text-white'
-                      : 'bg-purple-900/50 text-purple-200 hover:bg-purple-700/60'
-                  }`}
-                >
-                  {tag}
-                </button>
-              ))}
-              {selectedTags.length > 0 && (
-                <button type="button" className="text-sm underline opacity-80" onClick={() => setSelectedTags([])}>
-                  clear
-                </button>
-              )}
+              {allTags.map((tag) => {
+                const on = selectedTags.includes(tag);
+                return (
+                  <button key={tag} type="button" onClick={() => toggleTag(tag)} className="rounded-full px-3 py-1 text-sm" style={on ? { background: 'var(--primary)', color: 'var(--primary-foreground)', fontWeight: 700 } : { background: 'rgba(56,189,248,.12)', color: '#8FD4F5' }}>{tag}</button>
+                );
+              })}
+              {selectedTags.length > 0 && <button type="button" className="text-sm underline" style={{ color: '#9FB4DE' }} onClick={() => setSelectedTags([])}>clear</button>}
             </div>
           )}
-          <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-1">
+          <div className="flex flex-1 flex-col gap-2 overflow-y-auto pr-1">
             {libraryLoading && <Loading/>}
-            {!libraryLoading && !questions?.length && (
-              <p className="italic text-sm">Your library is empty — write your first question from the builder.</p>
-            )}
-            {!libraryLoading && questions?.length > 0 && filteredQuestions.length === 0 && (
-              <p className="italic text-sm">No questions match.</p>
-            )}
+            {!libraryLoading && !questions?.length && <p className="text-sm italic" style={{ color: '#9FB4DE' }}>Your library is empty — write your first question from the builder.</p>}
+            {!libraryLoading && questions?.length > 0 && filteredQuestions.length === 0 && <p className="text-sm italic" style={{ color: '#9FB4DE' }}>No questions match.</p>}
             {filteredQuestions.map(({ id: questionId, tileName, questionText, tags }) => (
-              <label key={questionId} className="flex items-center gap-3 rounded-md border border-purple-600 bg-purple-900/30 p-3 cursor-pointer">
-                <Checkbox
-                  checked={selectedIds.includes(questionId)}
-                  onCheckedChange={() => toggleQuestion(questionId)}
-                />
-                <span className="flex flex-col min-w-0">
+              <label key={questionId} className="flex cursor-pointer items-start gap-3 rounded-xl p-3" style={{ background: 'var(--card)', border: '1px solid rgba(255,255,255,.1)' }}>
+                <Checkbox className="mt-0.5" checked={selectedIds.includes(questionId)} onCheckedChange={() => toggleQuestion(questionId)}/>
+                <span className="flex min-w-0 flex-col">
                   <span className="font-semibold">{tileName}</span>
-                  <span className="text-sm opacity-80">{questionText}</span>
+                  <span className="text-sm" style={{ color: '#9FB4DE' }}>{questionText}</span>
                   {(tags ?? []).length > 0 && (
                     <span className="flex flex-wrap gap-1 pt-1">
-                      {tags.map((tag) => (
-                        <span key={tag} className="rounded-full bg-purple-900/60 px-2 py-0.5 text-xs text-purple-300">
-                          {tag}
-                        </span>
-                      ))}
+                      {tags.map((tag) => <span key={tag} className="rounded-full px-2 py-0.5 text-xs" style={{ background: 'rgba(56,189,248,.12)', color: '#8FD4F5' }}>{tag}</span>)}
                     </span>
                   )}
                 </span>
               </label>
             ))}
           </div>
-          <div className="flex items-center justify-between border-t border-purple-700 pt-3">
-            <span className="text-sm">{totalCount} in quiz</span>
+          <div className="flex items-center justify-between border-t border-white/10 pt-3">
+            <span className="text-sm" style={{ color: '#C7D2EC' }}>{totalCount} in quiz</span>
             <SheetClose asChild>
-              <Button>Done</Button>
+              <button type="button" className={goldBtn} style={{ fontSize: 15 }}>Done</button>
             </SheetClose>
           </div>
         </SheetContent>

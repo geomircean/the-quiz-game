@@ -2,10 +2,8 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button } from '@/components';
 import Loading from '@/components/loading';
 import QuestionConfiguration from '@/components/question-configuration';
-import { ArrowUturnLeftIcon } from '@heroicons/react/20/solid';
 import { useQuizConfigStore } from '@/stores';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/context/toast-context';
@@ -48,8 +46,6 @@ const QuestionEditor = () => {
     }
   };
 
-  const goBack = () => router.push('/admin');
-
   useEffect(() => {
     if (!id) {
       setupSingleQuestion();
@@ -78,9 +74,9 @@ const QuestionEditor = () => {
 
   if (loadError) {
     return (
-      <div className="flex flex-col items-center gap-4 py-8">
+      <div className="mx-auto flex max-w-[880px] flex-col items-center gap-4 px-6 py-16">
         <div className="error-message">Could not load question: {loadError}</div>
-        <Button onClick={() => router.push('/admin/questions-list')}>Back to Questions</Button>
+        <button type="button" onClick={() => router.push('/admin/questions-list')} className="rounded-xl border border-white/[.16] px-4 py-2.5 text-sm font-bold text-[#C7D2EC] hover:bg-accent">Back to library</button>
       </div>
     );
   }
@@ -90,17 +86,25 @@ const QuestionEditor = () => {
   }
 
   return (
-    <div className="flex flex-col justify-center gap-4">
-      <div className="flex justify-between px-24 py-5">
-        <Button onClick={goBack}><ArrowUturnLeftIcon className="size-6"/> </Button>
-        <Button onClick={saveQuestion} disabled={isSaving}>{isSaving ? 'Saving…' : 'Save'}</Button>
+    <div className="mx-auto flex w-full max-w-[880px] flex-col px-6 py-7 sm:px-8">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <button type="button" onClick={() => router.push('/admin/questions-list')} className="text-sm hover:text-foreground" style={{ color: '#7C8DB5' }}>← Library</button>
+        <span style={{ color: '#33456F' }}>/</span>
+        <h1 className="font-display tracking-[0.06em]" style={{ fontSize: 26 }}>{id ? 'EDIT QUESTION' : 'NEW QUESTION'}</h1>
+        {id && <span className="rounded-full px-2.5 py-1 text-xs font-bold" style={{ background: 'rgba(56,189,248,.14)', color: '#8FD4F5' }}>EDITING</span>}
+        <button
+          type="button"
+          onClick={saveQuestion}
+          disabled={isSaving}
+          className="ml-auto rounded-xl bg-primary px-6 py-2.5 font-display tracking-wide text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          style={{ fontSize: 15 }}
+        >
+          {isSaving ? 'SAVING…' : 'SAVE'}
+        </button>
       </div>
-      <div className="flex justify-between px-24 py-5">
-        <div className='w-full'>
-          <h1 className="text-2xl">{id ? 'Edit Question' : 'Create New Question'}</h1>
-          {saveError && <div className="error-message">Could not save: {saveError}</div>}
-          <QuestionConfiguration questionIndex={0} validation={validation}/>
-        </div>
+      {saveError && <div className="error-message mb-3">Could not save: {saveError}</div>}
+      <div className="rounded-[18px] p-6 sm:p-7" style={{ background: 'var(--card)', border: '1px solid rgba(255,255,255,.08)' }}>
+        <QuestionConfiguration questionIndex={0} validation={validation}/>
       </div>
     </div>
   );

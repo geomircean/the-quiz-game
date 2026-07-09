@@ -2,9 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, CardContent, CardHeader, CardTitle, Input } from '@/components';
 import Loading from '@/components/loading';
-import { ArrowUturnLeftIcon, PencilIcon, TrashIcon } from '@heroicons/react/20/solid';
 import { useQuestions } from '@/hooks/useQuestions';
 import { deleteQuestion } from '@/data/questions';
 import { quizzesUsingQuestion } from '@/data/quizzes';
@@ -55,89 +53,83 @@ const QuestionsList = () => {
     }
   };
 
+  const tagButton = (tag, active, extra = '') => (
+    <button
+      key={tag}
+      type="button"
+      onClick={() => toggleTag(tag)}
+      className={`rounded-full px-3 py-1 text-sm transition ${extra}`}
+      style={active
+        ? { background: 'var(--primary)', color: 'var(--primary-foreground)', fontWeight: 700 }
+        : { background: 'rgba(56,189,248,.12)', color: '#8FD4F5' }}
+    >
+      {tag}
+    </button>
+  );
+
   return (
-    <div className="flex flex-col gap-4 text-left">
-      <div className="flex justify-between py-5">
-        <Button onClick={() => router.push('/admin')}><ArrowUturnLeftIcon className="size-6"/></Button>
-        <Button onClick={() => router.push('/admin/question')}>Add Question</Button>
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-6 py-8 sm:px-10">
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="button" onClick={() => router.push('/admin')} className="text-sm hover:text-foreground" style={{ color: '#7C8DB5' }}>← Studio</button>
+        <span style={{ color: '#33456F' }}>/</span>
+        <h1 className="font-display tracking-[0.06em]" style={{ fontSize: 30 }}>LIBRARY</h1>
+        <button
+          type="button"
+          onClick={() => router.push('/admin/question')}
+          className="ml-auto rounded-xl bg-primary px-5 py-2.5 font-display tracking-wide text-primary-foreground hover:bg-primary/90"
+          style={{ fontSize: 15 }}
+        >
+          + ADD QUESTION
+        </button>
       </div>
-      <h1 className="text-2xl text-center">Your Question Library</h1>
-      {error && <div className="error-message text-center">Could not load questions: {error.message}</div>}
-      {deleteError && <div className="error-message text-center">Could not delete: {deleteError}</div>}
+
+      {error && <div className="error-message">Could not load questions: {error.message}</div>}
+      {deleteError && <div className="error-message">Could not delete: {deleteError}</div>}
       {isLoading && <Loading/>}
       {!isLoading && !questions?.length && (
-        <p className="text-center italic">No questions saved yet — add your first one.</p>
+        <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center" style={{ background: 'var(--card)' }}>
+          <p className="italic" style={{ color: '#9FB4DE' }}>No questions saved yet — add your first one.</p>
+        </div>
       )}
+
       {!!questions?.length && (
         <div className="flex flex-col gap-3">
-          <Input
+          <input
             type="text"
             placeholder="Search questions…"
             value={search}
-            className="max-w-md"
             onChange={(e) => setSearch(e.target.value)}
+            className="max-w-md rounded-xl px-4 py-2.5 text-sm text-foreground outline-none placeholder:text-[#5A6E9E] focus:border-primary"
+            style={{ background: 'var(--card)', border: '2px solid rgba(255,255,255,.1)' }}
           />
           {allTags.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
-              {allTags.map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => toggleTag(tag)}
-                  className={`rounded-full px-3 py-1 text-sm transition-colors ${
-                    selectedTags.includes(tag)
-                      ? 'bg-purple-500 text-white'
-                      : 'bg-purple-900/50 text-purple-200 hover:bg-purple-700/60'
-                  }`}
-                >
-                  {tag}
-                </button>
-              ))}
+              {allTags.map((tag) => tagButton(tag, selectedTags.includes(tag)))}
               {selectedTags.length > 0 && (
-                <button type="button" className="text-sm underline opacity-80" onClick={() => setSelectedTags([])}>
-                  clear
-                </button>
+                <button type="button" className="text-sm underline" style={{ color: '#9FB4DE' }} onClick={() => setSelectedTags([])}>clear</button>
               )}
             </div>
           )}
-          {filteredQuestions.length === 0 && (
-            <p className="italic text-sm">No questions match.</p>
-          )}
+          {filteredQuestions.length === 0 && <p className="text-sm italic" style={{ color: '#9FB4DE' }}>No questions match.</p>}
         </div>
       )}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {filteredQuestions.map(({ id, tileName, questionText, possibleAnswers, tags }) => (
-          <Card key={id} className="bg-purple-800/40 text-purple-100">
-            <CardHeader>
-              <CardTitle className="text-xl">{tileName}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <p>{questionText}</p>
-              <p className="text-sm italic">{possibleAnswers?.length ?? 0} answers</p>
-              {(tags ?? []).length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {tags.map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => toggleTag(tag)}
-                      className="rounded-full bg-purple-900/50 px-2 py-0.5 text-xs text-purple-200 hover:bg-purple-700/60"
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <div className="flex gap-2">
-                <Button size="sm" onClick={() => router.push(`/admin/question/?id=${id}`)}>
-                  <PencilIcon className="size-4 mr-1"/> Edit
-                </Button>
-                <Button size="sm" variant="destructive" onClick={() => onDelete(id, tileName)}>
-                  <TrashIcon className="size-4 mr-1"/> Delete
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div key={id} className="flex flex-col gap-3 rounded-2xl p-5" style={{ background: 'var(--card)', border: '1px solid rgba(255,255,255,.08)' }}>
+            <div>
+              <div className="font-display tracking-[0.03em]" style={{ fontSize: 18 }}>{tileName.toUpperCase()}</div>
+              <p className="mt-1.5 text-[15px]" style={{ color: '#C7D2EC' }}>{questionText}</p>
+            </div>
+            <p className="text-xs" style={{ color: '#7C8DB5' }}>{possibleAnswers?.length ?? 0} answer{(possibleAnswers?.length ?? 0) === 1 ? '' : 's'}</p>
+            {(tags ?? []).length > 0 && (
+              <div className="flex flex-wrap gap-1.5">{tags.map((tag) => tagButton(tag, selectedTags.includes(tag)))}</div>
+            )}
+            <div className="mt-auto flex gap-2 pt-1">
+              <button type="button" onClick={() => router.push(`/admin/question/?id=${id}`)} className="rounded-[10px] border border-white/[.16] px-3.5 py-2 text-sm font-semibold text-[#C7D2EC] hover:bg-accent">Edit</button>
+              <button type="button" onClick={() => onDelete(id, tileName)} className="rounded-[10px] border px-3.5 py-2 text-sm font-semibold" style={{ borderColor: 'rgba(229,72,77,.4)', color: '#F0A0A3' }}>Delete</button>
+            </div>
+          </div>
         ))}
       </div>
     </div>
