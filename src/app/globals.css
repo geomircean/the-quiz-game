@@ -4,42 +4,46 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Design tokens.
- * Full color values (not HSL channels) so the raw var(--foreground) and
- * var(--background) usages below (body, button) keep working, while
- * "@theme inline" re-exposes each token as background, text, border and
- * ring color utilities that the shadcn components consume.
+ * Design tokens — navy + gold "game-show" palette (reskin).
+ * One system drives every surface; pages consume tokens, never hardcoded
+ * purple. Dark base today; the same variables invert cleanly for a light
+ * theme later. Full spec in DESIGN-HANDOFF.md / the design bundle.
  */
 :root {
-  --radius: 0.5rem;
+  --radius: 0.75rem;
 
-  --background: #19485f;
-  --foreground: #d9e0a4;
+  /* surfaces */
+  --background: #0A1733;
+  --foreground: #F2F5FF;
+  --card: #0E2A46;
+  --card-foreground: #F2F5FF;
+  --popover: #0C1E44;
+  --popover-foreground: #F2F5FF;
+  --sidebar: #0B1A3D;
 
-  --card: #133445;
-  --card-foreground: #d9e0a4;
+  /* brand + state */
+  --primary: #F6C544;
+  --primary-foreground: #0A1733;
+  --secondary: #12325B;
+  --secondary-foreground: #F2F5FF;
+  --muted: #0E2A46;
+  --muted-foreground: #8FA6D8;
+  --accent: #163A64;
+  --accent-foreground: #F2F5FF;
+  --destructive: #E5484D;
+  --destructive-foreground: #F2F5FF;
+  --border: #1B3358;
+  --input: #12325B;
+  --ring: #F6C544;
 
-  --popover: #133445;
-  --popover-foreground: #d9e0a4;
-
-  --primary: #7c3aed;
-  --primary-foreground: #f5f3ff;
-
-  --secondary: #4338ca;
-  --secondary-foreground: #eef2ff;
-
-  --muted: #1e3a4a;
-  --muted-foreground: #9db3bd;
-
-  --accent: #6d28d9;
-  --accent-foreground: #f5f3ff;
-
-  --destructive: #dc2626;
-  --destructive-foreground: #fef2f2;
-
-  --border: #2f5468;
-  --input: #2f5468;
-  --ring: #a855f7;
+  /* extended brand tokens — teams, reveal, display */
+  --gold: #F6C544;
+  --sky: #38BDF8;
+  --coral: #FF7043;
+  --success: #17B26A;
+  --danger: #E5484D;
+  --team-1: var(--sky);
+  --team-2: var(--coral);
 }
 
 @theme inline {
@@ -49,6 +53,7 @@
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+  --color-sidebar: var(--sidebar);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
@@ -63,10 +68,23 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
+  --color-gold: var(--gold);
+  --color-sky: var(--sky);
+  --color-coral: var(--coral);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-team-1: var(--team-1);
+  --color-team-2: var(--team-2);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* Display = Anton (scores, room codes, headers). Body/UI = Libre Franklin.
+     next/font defines --font-anton / --font-libre on <html> (layout.js). */
+  --font-sans: var(--font-libre), system-ui, sans-serif;
+  --font-display: var(--font-anton), system-ui, sans-serif;
 }
 
 @layer base {
@@ -77,14 +95,11 @@
   }
 }
 
-/* The backdrop (purple gradient + min-height) lives on <body> in
-   layout.js as Tailwind utilities — no unlayered background here, it
-   would win over the utility layer and repaint everything teal. */
 body {
   color: var(--foreground);
 }
 
 .error-message {
-  @apply text-red-600;
+  color: var(--destructive);
   font-style: italic;
 }

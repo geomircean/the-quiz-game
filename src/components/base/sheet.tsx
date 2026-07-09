@@ -38,7 +38,7 @@ const SheetContent = React.forwardRef<
       ref={ref}
       className={cn(
         'fixed inset-y-0 right-0 z-50 flex h-full w-11/12 flex-col gap-4 p-6 shadow-lg sm:max-w-md',
-        'border-l border-purple-500 bg-purple-950 text-purple-100',
+        'border-l border-border bg-popover text-foreground',
         'data-[state=open]:animate-in data-[state=open]:slide-in-from-right data-[state=open]:duration-300',
         className,
       )}
